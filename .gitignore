@@ -1,0 +1,26 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python byte code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local Environment variables
+.env
+
+# Large model weights (>100MB violates GitHub file size limits)
+*.gguf
+data/models/*.gguf
+data/models/.cache/
+models/*
+!models/.gitkeep
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.tmp

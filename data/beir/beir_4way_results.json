@@ -1,0 +1,30 @@
+{
+  "BM25 (Sparse)": {
+    "NDCG@10": 0.6519,
+    "MRR@10": 0.6186,
+    "Recall@10": 0.774,
+    "Recall@100": 0.8731,
+    "MAP@10": 0.607
+  },
+  "Dense (all-MiniLM-L6-v2)": {
+    "NDCG@10": 0.6451,
+    "MRR@10": 0.6047,
+    "Recall@10": 0.7833,
+    "Recall@100": 0.925,
+    "MAP@10": 0.5959
+  },
+  "Hybrid (BM25 + Dense RRF)": {
+    "NDCG@10": 0.6794,
+    "MRR@10": 0.6406,
+    "Recall@10": 0.8059,
+    "Recall@100": 0.9577,
+    "MAP@10": 0.6331
+  },
+  "Enhanced (Hybrid + Cross-Encoder)": {
+    "NDCG@10": 0.6529,
+    "MRR@10": 0.6158,
+    "Recall@10": 0.7998,
+    "Recall@100": 0.9577,
+    "MAP@10": 0.6003
+  }
+}

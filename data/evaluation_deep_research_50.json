@@ -1,0 +1,586 @@
+{
+  "benchmark_name": "LocalRAG 20-Document Deep Research IR Benchmark",
+  "description": "50 scientifically verified evaluation queries distributed across 20 academic PDF papers, categorized into Hard Distractor Traps, Empirical Scientific Facts, and Multi-Hop Synthesis.",
+  "num_queries": 50,
+  "documents_indexed": 20,
+  "total_chunks": 4995,
+  "queries": [
+    {
+      "query_id": "hd_01",
+      "category": "Hard Distractor",
+      "query": "How does DPR use in-batch negative passages during dual-encoder loss computation?",
+      "target_document": "Dense_Passage_Retrieval",
+      "relevant_chunk_ids": [
+        "17c93f61dae1de4a0af4",
+        "d28342f1bdad1506b4e0",
+        "dad1c672a37d3686e39d",
+        "dced05d80481eb1de33e",
+        "5de337bb958954996fbd"
+      ]
+    },
+    {
+      "query_id": "hd_02",
+      "category": "Hard Distractor",
+      "query": "In ColBERT, how does the MaxSim operator compute late interaction between query and document token embeddings?",
+      "target_document": "ColBERT",
+      "relevant_chunk_ids": [
+        "0410d94831454ea56894",
+        "2a3c6ffd96e8d096fe29",
+        "b1315ce747b91c61b79a",
+        "23cf757c23a8c16d9412",
+        "e6aaf4f10ae0a5845cff"
+      ]
+    },
+    {
+      "query_id": "hd_03",
+      "category": "Hard Distractor",
+      "query": "What are the four reflection token types defined in Self-RAG: Retrieve, ISREL, ISSUP, and ISUSE?",
+      "target_document": "Self_RAG",
+      "relevant_chunk_ids": [
+        "38d2267d3e9016fe5a3b",
+        "e6faa1463c2e60d7213f",
+        "070d1db9a6afcef24a86",
+        "1d29757d06fb089c734c",
+        "e960952a6c5491c86515"
+      ]
+    },
+    {
+      "query_id": "hd_04",
+      "category": "Hard Distractor",
+      "query": "How does FlashAttention compute exact softmax attention without materializing the full N-by-N attention matrix in GPU HBM?",
+      "target_document": "FlashAttention",
+      "relevant_chunk_ids": [
+        "2f5645c403b13f231310",
+        "acb2d8ad67f7aed030d1",
+        "2f765a2ac94bcfa5aebb",
+        "779c88b01ece5dc401dc",
+        "564ed2c5ccbf600416f5"
+      ]
+    },
+    {
+      "query_id": "hd_05",
+      "category": "Hard Distractor",
+      "query": "How does Chain-of-Verification (CoVe) formulate baseline responses, plan verification questions, and execute fact verification?",
+      "target_document": "Chain_of_Verification",
+      "relevant_chunk_ids": [
+        "10e756edaec810f805f0",
+        "045370e0b3fffdadf046",
+        "1af58e79c341ef9fda68",
+        "910235482df0880ddad9",
+        "af71fadcfb82f4815f21"
+      ]
+    },
+    {
+      "query_id": "hd_06",
+      "category": "Hard Distractor",
+      "query": "In RAGAS, how is Faithfulness computed as the harmonic mean of grounded statements divided by total generated statements?",
+      "target_document": "RAGAS",
+      "relevant_chunk_ids": [
+        "a976359434f8f9927213",
+        "370a67b76501c26bd878",
+        "02131b26c373b9a8cf88",
+        "9111f2ceae1f5cf31b92",
+        "4fef41043a006ba539b2"
+      ]
+    },
+    {
+      "query_id": "hd_07",
+      "category": "Hard Distractor",
+      "query": "According to the RAG survey, what are the key differences between Naive RAG, Advanced RAG, and Modular RAG?",
+      "target_document": "RAG_Survey",
+      "relevant_chunk_ids": [
+        "ff7b4c7fd2f1d722aece",
+        "2269485c5363383fdfc1",
+        "2353ceb4f3adee1bc6ad",
+        "855747ed17aeb095f78c",
+        "3b831c9db0944775d27f"
+      ]
+    },
+    {
+      "query_id": "hd_08",
+      "category": "Hard Distractor",
+      "query": "Why does PubMedBERT advocate for domain-specific pretraining from scratch on PubMed abstracts over domain adaptation from standard BERT?",
+      "target_document": "PubMedBERT",
+      "relevant_chunk_ids": [
+        "c80bf51b314fb23df884",
+        "6a876d356b8e8d4a1268",
+        "d4de8ecd32d254c62539",
+        "fe176bbd7634ee2ad254",
+        "b0632a70651d7e4a8fdf"
+      ]
+    },
+    {
+      "query_id": "hd_09",
+      "category": "Hard Distractor",
+      "query": "How does Mistral 7B leverage Sliding Window Attention (SWA) with a window size of 4096 to achieve linear compute scaling?",
+      "target_document": "Mistral_7B",
+      "relevant_chunk_ids": [
+        "2108b21256f39e7263f8",
+        "2e8580c4b110f99b0e64",
+        "f779923093addd7e2d09",
+        "b2c52998db46c9917110",
+        "656d4ae54d9e2ffc11d0"
+      ]
+    },
+    {
+      "query_id": "hd_10",
+      "category": "Hard Distractor",
+      "query": "How does BioBERT initialize weights from standard BERT-base before continuous pretraining on PubMed and PMC full-text articles?",
+      "target_document": "BioBERT",
+      "relevant_chunk_ids": [
+        "3fcfa225d5c0a5cd3b51",
+        "303aec0dd5d36f5b724f",
+        "c79b052be64c82378996",
+        "e4ef5a2e4494fd5327af",
+        "bda9e9913d67fe4dcaf8"
+      ]
+    },
+    {
+      "query_id": "hd_11",
+      "category": "Hard Distractor",
+      "query": "How does RAG-Sequence marginalize across documents compared to RAG-Token generating token-by-token?",
+      "target_document": "Retrieval_Augmented_Generation",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "hd_12",
+      "category": "Hard Distractor",
+      "query": "In HaluEval, how are ChatGPT-generated hallucinations categorized across Question Answering, Dialogue, and Summarization tasks?",
+      "target_document": "HaluEval",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "hd_13",
+      "category": "Hard Distractor",
+      "query": "How does TruthfulQA design 817 questions spanning 38 categories to elicit false beliefs and common misconceptions from language models?",
+      "target_document": "TruthfulQA",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "hd_14",
+      "category": "Hard Distractor",
+      "query": "How does BioGPT utilize a generative GPT-2 architecture for biomedical text generation and mining compared to BERT-based discriminative models?",
+      "target_document": "BioGPT",
+      "relevant_chunk_ids": [
+        "26a6bd56d8b1b7b4caf6",
+        "10cc7811122122afaf52"
+      ]
+    },
+    {
+      "query_id": "hd_15",
+      "category": "Hard Distractor",
+      "query": "In Med-PaLM, how did instruction prompt tuning align PaLM 540B with clinical physician consensus on MultiMedQA?",
+      "target_document": "Med_PaLM",
+      "relevant_chunk_ids": [
+        "725aa5cd32c60a7aa72e",
+        "c77770d727655b2092bf",
+        "c3cd9323ed850193356d",
+        "8b8d58c92c9e22ee177f",
+        "021ea2476d1d13a1986d"
+      ]
+    },
+    {
+      "query_id": "hd_16",
+      "category": "Hard Distractor",
+      "query": "How did Med-PaLM 2 achieve expert-level performance exceeding 86% accuracy on the MedQA USMLE dataset?",
+      "target_document": "Med_PaLM_2",
+      "relevant_chunk_ids": [
+        "41f277b2b42b4dedbb46",
+        "e5bdf8a3e851f5a7e2a7",
+        "7164c7e583fc3da11b01",
+        "e0b1c1bd701e528eb523",
+        "456bee993eca76066ea9"
+      ]
+    },
+    {
+      "query_id": "hd_17",
+      "category": "Hard Distractor",
+      "query": "In RoFormer, how does Rotary Position Embedding (RoPE) encode relative position information via orthogonal rotation matrices in complex space?",
+      "target_document": "RoFormer",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "hd_18",
+      "category": "Hard Distractor",
+      "query": "In Llama 2, how does Ghost Attention (GAtt) control dialogue context and system prompt adherence across multi-turn chat sessions?",
+      "target_document": "Llama_2",
+      "relevant_chunk_ids": [
+        "470b32ebb7538a2866be",
+        "525091b2da77437d44da",
+        "675e151138aabfb63e1f",
+        "95d052f810e9ac3580c4",
+        "f60e222f7c57935977c4"
+      ]
+    },
+    {
+      "query_id": "hd_19",
+      "category": "Hard Distractor",
+      "query": "In Vaswani et al., how does Multi-Head Attention project queries, keys, and values h times with dimensionality d_k = d_model / h?",
+      "target_document": "Attention_Is_All_You_Need",
+      "relevant_chunk_ids": [
+        "b7f9980b30bbea752350",
+        "4e4732111b97079944e1",
+        "6a9a92e3a402caebdb2e",
+        "c6f272ff9178a4e324db",
+        "42e97804a082c9e1b7a3"
+      ]
+    },
+    {
+      "query_id": "hd_20",
+      "category": "Hard Distractor",
+      "query": "According to the Sirens' Song survey, what are the primary root causes of hallucination in LLMs categorized into data, training, and inference?",
+      "target_document": "Sirens_Song",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "ef_01",
+      "category": "Empirical Fact",
+      "query": "What is the Top-20 retrieval accuracy of DPR on the Natural Questions dataset compared to Lucene BM25?",
+      "target_document": "Dense_Passage_Retrieval",
+      "relevant_chunk_ids": [
+        "bf77107570f416fcd5eb",
+        "ec8ba379f75e262fc602",
+        "2d68620be3253313da21",
+        "81264c4b2373560ade1e",
+        "9a1415ad87a20bf26cd2"
+      ]
+    },
+    {
+      "query_id": "ef_02",
+      "category": "Empirical Fact",
+      "query": "What MRR@10 score did ColBERT achieve on the MS MARCO passage ranking benchmark?",
+      "target_document": "ColBERT",
+      "relevant_chunk_ids": [
+        "0410d94831454ea56894",
+        "f30c632c733e4f3680c8",
+        "b1315ce747b91c61b79a",
+        "fd5b278205c5ab78f53c",
+        "69535ac8d81023d74cc2"
+      ]
+    },
+    {
+      "query_id": "ef_03",
+      "category": "Empirical Fact",
+      "query": "In Self-RAG, what base language model sizes (7B and 13B) were evaluated against Llama-2-chat baselines?",
+      "target_document": "Self_RAG",
+      "relevant_chunk_ids": [
+        "96a4f89d852d2aed7660",
+        "b7bab808c134f688f486",
+        "65d88d9cd6404a2aaa03",
+        "0a996c89f9cb1d77e9cc",
+        "86e6e0f952d3f4ff6e14"
+      ]
+    },
+    {
+      "query_id": "ef_04",
+      "category": "Empirical Fact",
+      "query": "What wall-clock speedup (2x to 4x) does FlashAttention achieve on GPT-2 attention forward and backward passes?",
+      "target_document": "FlashAttention",
+      "relevant_chunk_ids": [
+        "ef7b14c987df3594b42a",
+        "2f765a2ac94bcfa5aebb",
+        "5cc47af0ad980e4771da",
+        "99ee72a98f448b1c3a6f",
+        "564ed2c5ccbf600416f5"
+      ]
+    },
+    {
+      "query_id": "ef_05",
+      "category": "Empirical Fact",
+      "query": "On Wikidata and Wiki-Category QA benchmarks, what hallucination reduction percentage did Chain-of-Verification report?",
+      "target_document": "Chain_of_Verification",
+      "relevant_chunk_ids": [
+        "10e756edaec810f805f0",
+        "045370e0b3fffdadf046",
+        "1af58e79c341ef9fda68",
+        "31248181e5445e669717",
+        "51edfe0e69045b476c14"
+      ]
+    },
+    {
+      "query_id": "ef_06",
+      "category": "Empirical Fact",
+      "query": "What correlation with human annotators does the RAGAS framework report for Faithfulness and Answer Relevancy?",
+      "target_document": "RAGAS",
+      "relevant_chunk_ids": [
+        "4a31ff5d214de65b7f14",
+        "43cfff3199e13fad9879",
+        "a976359434f8f9927213",
+        "370a67b76501c26bd878",
+        "9111f2ceae1f5cf31b92"
+      ]
+    },
+    {
+      "query_id": "ef_07",
+      "category": "Empirical Fact",
+      "query": "What chunk size and overlap ratios are surveyed in Gao et al. for balancing context granularity versus retrieval noise?",
+      "target_document": "RAG_Survey",
+      "relevant_chunk_ids": [
+        "00d93eec1fa9a7707260",
+        "a072cd2f38911aa09311",
+        "41b5e60c511434c74410",
+        "8af663bfeff9de92e9f5",
+        "1685184f90fc2a8d7c53"
+      ]
+    },
+    {
+      "query_id": "ef_08",
+      "category": "Empirical Fact",
+      "query": "On the BLURB biomedical benchmark, what score did PubMedBERT achieve compared to BioBERT and RoBERTa?",
+      "target_document": "PubMedBERT",
+      "relevant_chunk_ids": [
+        "d4de8ecd32d254c62539",
+        "2375d7616ba625ba5dd9",
+        "99c518e8bacc9425506c",
+        "46c4b7a05f175840b351",
+        "6826246244d34cc4fba3"
+      ]
+    },
+    {
+      "query_id": "ef_09",
+      "category": "Empirical Fact",
+      "query": "What context length (up to 32k tokens) and benchmark score on MMLU did Mistral 7B achieve compared to Llama 2 13B?",
+      "target_document": "Mistral_7B",
+      "relevant_chunk_ids": [
+        "d62f85268d4a83ed24cb",
+        "2108b21256f39e7263f8",
+        "2e8580c4b110f99b0e64",
+        "1b22375f6965658bb86e",
+        "b2c52998db46c9917110"
+      ]
+    },
+    {
+      "query_id": "ef_10",
+      "category": "Empirical Fact",
+      "query": "What F1 score improvements did BioBERT achieve on NCBI Disease and BC5CDR chemical named entity recognition datasets?",
+      "target_document": "BioBERT",
+      "relevant_chunk_ids": [
+        "3fcfa225d5c0a5cd3b51",
+        "ed226fa6d62d473d6ddb",
+        "303aec0dd5d36f5b724f",
+        "c79b052be64c82378996",
+        "e4ef5a2e4494fd5327af"
+      ]
+    },
+    {
+      "query_id": "ef_11",
+      "category": "Empirical Fact",
+      "query": "On TriviaQA and Natural Questions, what exact-match performance did RAG-Token achieve in Lewis et al. 2020?",
+      "target_document": "Retrieval_Augmented_Generation",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "ef_12",
+      "category": "Empirical Fact",
+      "query": "In HaluEval, what percentage of ChatGPT responses in user-labeled queries were found to contain hallucinations?",
+      "target_document": "HaluEval",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "ef_13",
+      "category": "Empirical Fact",
+      "query": "What 0-shot and few-shot truthfulness percentages were scored by GPT-3 on the TruthfulQA benchmark?",
+      "target_document": "TruthfulQA",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "ef_14",
+      "category": "Empirical Fact",
+      "query": "What BLEU-1 and accuracy scores did BioGPT achieve on the BC5CDR and PubMedQA question answering tasks?",
+      "target_document": "BioGPT",
+      "relevant_chunk_ids": [
+        "0eef39238c1c7b5495db",
+        "484dcea84184269401b5"
+      ]
+    },
+    {
+      "query_id": "ef_15",
+      "category": "Empirical Fact",
+      "query": "What was the passing threshold and exact accuracy (67.6%) achieved by Med-PaLM on the MedQA USMLE exam?",
+      "target_document": "Med_PaLM",
+      "relevant_chunk_ids": [
+        "725aa5cd32c60a7aa72e",
+        "c77770d727655b2092bf",
+        "021ea2476d1d13a1986d",
+        "f6c125ce096c309a718f",
+        "a02eeadd465b3edba7aa"
+      ]
+    },
+    {
+      "query_id": "ef_16",
+      "category": "Empirical Fact",
+      "query": "What physician evaluation agreement rate did Med-PaLM 2 achieve on clinical correctness compared to medical experts?",
+      "target_document": "Med_PaLM_2",
+      "relevant_chunk_ids": [
+        "41f277b2b42b4dedbb46",
+        "e5bdf8a3e851f5a7e2a7",
+        "e0b1c1bd701e528eb523",
+        "456bee993eca76066ea9",
+        "ec9cc393310728f0b5dc"
+      ]
+    },
+    {
+      "query_id": "ef_17",
+      "category": "Empirical Fact",
+      "query": "In RoFormer, what sequence length extrapolation capabilities were demonstrated on the Enwik8 character-level benchmark?",
+      "target_document": "RoFormer",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "ef_18",
+      "category": "Empirical Fact",
+      "query": "What total token count (2 Trillion tokens) and RLHF training dataset size were used to train Llama 2 70B?",
+      "target_document": "Llama_2",
+      "relevant_chunk_ids": [
+        "173aad0e908b757b9088",
+        "d03eab0501760e2ef74e",
+        "470b32ebb7538a2866be",
+        "92934c8d8e6cc3fc0d1d",
+        "ddc1abe935963a7ded7d"
+      ]
+    },
+    {
+      "query_id": "ef_19",
+      "category": "Empirical Fact",
+      "query": "What BLEU scores (28.4 on WMT 2014 English-to-German) were achieved by the original Transformer base and big models?",
+      "target_document": "Attention_Is_All_You_Need",
+      "relevant_chunk_ids": [
+        "83a5dce403dc411db3e6",
+        "adaac97e6190a09edb7e",
+        "2d69557e18cf3d6dd2b4",
+        "b7f9980b30bbea752350",
+        "f8f3127eb1a660e17ab2"
+      ]
+    },
+    {
+      "query_id": "ef_20",
+      "category": "Empirical Fact",
+      "query": "In the Sirens' Song survey, what hallucination mitigation techniques are classified into prompt engineering versus decoding strategies?",
+      "target_document": "Sirens_Song",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "syn_01",
+      "category": "Synthesis",
+      "query": "How do DPR and ColBERT contrast in their computational trade-offs between offline index storage and online query latency?",
+      "target_document": "ColBERT",
+      "relevant_chunk_ids": [
+        "564573319ffc30559f9f",
+        "69535ac8d81023d74cc2",
+        "6ab819ea356efcfdcb81",
+        "35e9682253a1608d7178",
+        "c7cdee03a61eeb3d3cfd"
+      ]
+    },
+    {
+      "query_id": "syn_02",
+      "category": "Synthesis",
+      "query": "How does FlashAttention's exact IO-aware tiling differ from approximate sparse attention mechanisms in Transformers?",
+      "target_document": "FlashAttention",
+      "relevant_chunk_ids": [
+        "2f5645c403b13f231310",
+        "ef7b14c987df3594b42a",
+        "acb2d8ad67f7aed030d1",
+        "2f765a2ac94bcfa5aebb",
+        "5cc47af0ad980e4771da"
+      ]
+    },
+    {
+      "query_id": "syn_03",
+      "category": "Synthesis",
+      "query": "How do Chain-of-Verification (CoVe) and Self-RAG compare in their approach to generating verification questions versus reflection tokens?",
+      "target_document": "Chain_of_Verification",
+      "relevant_chunk_ids": [
+        "10e756edaec810f805f0",
+        "045370e0b3fffdadf046",
+        "1af58e79c341ef9fda68",
+        "910235482df0880ddad9",
+        "40a6229d72ac9cc5f687"
+      ]
+    },
+    {
+      "query_id": "syn_04",
+      "category": "Synthesis",
+      "query": "How does RAGAS quantify Context Precision and Context Recall without requiring human reference annotations?",
+      "target_document": "RAGAS",
+      "relevant_chunk_ids": [
+        "0cd2128e181dbab6dff9",
+        "a63a934c3c2ef64b5a1e",
+        "370a67b76501c26bd878",
+        "fcaa944ff9284e1c386a"
+      ]
+    },
+    {
+      "query_id": "syn_05",
+      "category": "Synthesis",
+      "query": "Why does PubMedBERT argue that continual pretraining on mixed-domain corpora retains non-biomedical bias compared to domain-specific vocabularies?",
+      "target_document": "PubMedBERT",
+      "relevant_chunk_ids": [
+        "c80bf51b314fb23df884",
+        "6a876d356b8e8d4a1268",
+        "d4de8ecd32d254c62539",
+        "e7cbb72f75fba5a431ac",
+        "fe176bbd7634ee2ad254"
+      ]
+    },
+    {
+      "query_id": "syn_06",
+      "category": "Synthesis",
+      "query": "How does Rotary Position Embedding (RoPE) resolve the sequence length generalization bottleneck present in standard sinusoidal embeddings?",
+      "target_document": "RoFormer",
+      "relevant_chunk_ids": []
+    },
+    {
+      "query_id": "syn_07",
+      "category": "Synthesis",
+      "query": "How do Med-PaLM and Med-PaLM 2 evolve clinical evaluation frameworks beyond multiple-choice USMLE questions to clinician alignment?",
+      "target_document": "Med_PaLM_2",
+      "relevant_chunk_ids": [
+        "e5bdf8a3e851f5a7e2a7",
+        "7164c7e583fc3da11b01",
+        "e0b1c1bd701e528eb523",
+        "456bee993eca76066ea9",
+        "ec9cc393310728f0b5dc"
+      ]
+    },
+    {
+      "query_id": "syn_08",
+      "category": "Synthesis",
+      "query": "How does Mistral 7B's Grouped Query Attention (GQA) combined with Sliding Window Attention optimize KV cache memory during autoregressive generation?",
+      "target_document": "Mistral_7B",
+      "relevant_chunk_ids": [
+        "2e8580c4b110f99b0e64",
+        "f779923093addd7e2d09",
+        "b2c52998db46c9917110",
+        "656d4ae54d9e2ffc11d0",
+        "79dd76eac8a860feb83b"
+      ]
+    },
+    {
+      "query_id": "syn_09",
+      "category": "Synthesis",
+      "query": "In Llama 2, how does Proximal Policy Optimization (PPO) with dual reward models for Safety and Helpfulness prevent sycophancy?",
+      "target_document": "Llama_2",
+      "relevant_chunk_ids": [
+        "173aad0e908b757b9088",
+        "d03eab0501760e2ef74e",
+        "470b32ebb7538a2866be",
+        "92934c8d8e6cc3fc0d1d",
+        "ddc1abe935963a7ded7d"
+      ]
+    },
+    {
+      "query_id": "syn_10",
+      "category": "Synthesis",
+      "query": "How does Multi-Head Self-Attention compute parallel representation subspaces compared to single-head attention in encoder-decoder architectures?",
+      "target_document": "Attention_Is_All_You_Need",
+      "relevant_chunk_ids": [
+        "b7f9980b30bbea752350",
+        "7193e4e67adb673a694a",
+        "36d4347d72fd2a452a29",
+        "537035d0d9886a79ded6",
+        "4e4732111b97079944e1"
+      ]
+    }
+  ]
+}

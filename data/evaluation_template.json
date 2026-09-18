@@ -1,0 +1,11 @@
+{
+  "queries": [
+    {
+      "query_id": "q1",
+      "query": "What is a data model?",
+      "relevant_chunk_ids": [
+        "REPLACE_WITH_CHUNK_ID"
+      ]
+    }
+  ]
+}

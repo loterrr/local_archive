@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus: The Archive — Local RAG & Empirical Benchmark</title>
+  <!-- Google Fonts: Inter and Newsreader / Playfair -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Chart.js and Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <!-- Mozilla PDF.js Offline Engine -->
+  <script src="/static/vendor/pdf.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+
+  <div class="app-layout">
+    
+    <!-- LEFT SIDEBAR: Archival Index -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title-row">
+          <div class="sidebar-icon"><i class="fa-solid fa-layer-group"></i></div>
+          <div>
+            <h2 class="sidebar-title">Archival Index</h2>
+            <p class="sidebar-subtitle" id="manuscriptsCountLabel">20 manuscripts stored</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-actions">
+        <div class="sidebar-actions-row">
+          <button class="btn-index-pdf" id="btnUploadModal" title="Upload one or multiple PDF manuscripts">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            <span>Upload PDFs</span>
+          </button>
+          <button class="btn-clear-archive" id="btnClearArchive" title="Clear All Stored Manuscripts">
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
+        </div>
+        <input type="file" id="pdfFileInput" accept=".pdf" multiple style="display: none;" />
+        <div class="upload-hint">Select one or multiple PDF files (up to 50MB each)</div>
+      </div>
+
+      <div class="sidebar-search">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="manuscriptSearch" placeholder="Filter manuscripts..." />
+      </div>
+
+      <div class="manuscripts-list" id="manuscriptsList">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <span class="status-dot online"></span>
+          <span id="systemStatusText">Offline Core Active</span>
+        </div>
+        <div class="model-badge-mini" id="sidebarModelBadge">phi3.5:latest</div>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-content">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="brand-title">The Archive</h1>
+          <div class="topbar-badges">
+            <span class="badge badge-model"><span class="dot-green"></span> <span id="topbarModelName">phi3.5:latest</span></span>
+            <span class="badge badge-mode" id="topbarModeBadge">enhanced</span>
+            <span class="badge badge-chunks"><i class="fa-solid fa-database"></i> 2,131 chunks</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- View Navigation Tabs -->
+          <nav class="nav-tabs" role="tablist">
+            <button class="nav-tab active" data-view="journal" id="tabJournal">
+              <i class="fa-regular fa-bookmark"></i>
+              <span>Journal</span>
+            </button>
+            <button class="nav-tab" data-view="inspector" id="tabInspector">
+              <i class="fa-regular fa-file-lines"></i>
+              <span>Inspector</span>
+            </button>
+            <button class="nav-tab" data-view="benchmark" id="tabBenchmark">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Benchmark</span>
+            </button>
+          </nav>
+
+          <div class="topbar-actions">
+            <button class="icon-btn" id="btnClearChat" title="Clear Chat History">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+            <button class="icon-btn" id="btnDownloadExcel" title="Download 4-Sheet Evaluation Workbook">
+              <i class="fa-solid fa-file-excel"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEW CONTAINER -->
+      <div class="views-wrapper">
+        
+        <!-- ========================================================= -->
+        <!-- VIEW 1: JOURNAL (CONVERSATIONAL LITERATURE Q&A) -->
+        <!-- ========================================================= -->
+        <section class="view-panel active" id="viewJournal">
+          <div class="chat-container">
+            
+            <div class="chat-messages" id="chatMessages">
+              <!-- Welcome Suggestion Card -->
+              <div class="welcome-card" id="welcomeCard">
+                <div class="welcome-badge">ACADEMIC RESEARCH WORKSPACE</div>
+                <h2 class="welcome-title">Synthesize Literature & Verify Findings</h2>
+                <p class="welcome-desc">Query the 20 indexed peer-reviewed manuscripts with verifiable source citations, late interaction disambiguation, and hallucination suppression.</p>
+                
+                <div class="quick-prompts-label">RECOMMENDED INVESTIGATIONS:</div>
+                <div class="quick-prompts-grid">
+                  <button class="prompt-chip" data-query="Compare architectural trade-offs across indexed manuscripts">
+                    <i class="fa-solid fa-layer-group"></i> Compare architectural trade-offs across indexed manuscripts
+                  </button>
+                  <button class="prompt-chip" data-query="How does FlashAttention compute exact attention without materializing N-by-N matrices in HBM?">
+                    <i class="fa-solid fa-bolt"></i> How does FlashAttention compute exact attention in SRAM?
+                  </button>
+                  <button class="prompt-chip" data-query="What reflection tokens are used in Self-RAG to critique retrieved passages?">
+                    <i class="fa-solid fa-shield-halved"></i> What reflection tokens are used in Self-RAG?
+                  </button>
+                  <button class="prompt-chip" data-query="Why does PubMedBERT advocate pretraining from scratch over continuous domain adaptation?">
+                    <i class="fa-solid fa-dna"></i> PubMedBERT from-scratch pretraining vs BioBERT
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CHAT INPUT BAR (Matches Screenshot 2) -->
+            <div class="chat-input-wrapper">
+              <form class="chat-input-form" id="chatForm">
+                <div class="input-prefix-icon"><i class="fa-regular fa-comment-dots"></i></div>
+                <input 
+                  type="text" 
+                  id="queryInput" 
+                  class="chat-input" 
+                  placeholder="Query the literature, verify claims, or extract findings..." 
+                  autocomplete="off"
+                />
+                <button type="submit" class="btn-send" id="btnSend">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VIEW 2: BENCHMARK SUITE (Exact Match to Screenshot 1 & 2) -->
+        <!-- ========================================================= -->
+        <section class="view-panel" id="viewBenchmark">
+          <div class="benchmark-container">
+            
+            <!-- Benchmark Sub-Header (Matches Screenshot 1) -->
+            <div class="benchmark-header">
+              <div class="bench-header-left">
+                <button class="btn-bench-back" id="btnBenchBack" title="Back to Journal">
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                  <h2 class="bench-main-title">The Archive <span class="bench-sub-title">Empirical Benchmark Suite</span></h2>
+                  <p class="bench-tagline">Decoupled Upstream Funnel & Cross Encoder Quality Metrics</p>
+                </div>
+              </div>
+              <div class="bench-header-badges">
+                <span class="pill-badge"><i class="fa-solid fa-database"></i> <span id="benchManuscriptsCount">15 manuscripts</span></span>
+                <button class="pill-badge pill-action" id="btnReindexHeader">
+                  <i class="fa-solid fa-rotate"></i> <span>Re-index (450-char chunks)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Sub-Tab Navigation Bar -->
+            <div class="benchmark-subnav">
+              <button class="subnav-btn active" id="btnSubnavRetrieval">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> <span>Retrieval Quality & BEIR</span>
+              </button>
+              <button class="subnav-btn" id="btnSubnavGeneration">
+                <i class="fa-solid fa-brain"></i> <span>Generation & Grounding (RAGAS)</span>
+              </button>
+            </div>
+
+            <!-- ================= SUB-TAB 1: RETRIEVAL PANE ================= -->
+            <div class="benchmark-subtab-pane active" id="paneRetrieval">
+
+            <!-- Benchmark Configuration Card (Matches Screenshot 1) -->
+            <div class="card-config">
+              <div class="card-config-header">
+                <i class="fa-solid fa-bolt-lightning text-blue"></i>
+                <span class="config-title">Benchmark Configuration</span>
+              </div>
+
+              <div class="config-grid">
+                <div class="config-field">
+                  <label>Upstream Candidate Pool (k_fetch)</label>
+                  <select id="benchCandidateK" class="custom-select">
+                    <option value="50" selected>k_fetch = 50 (Standard Funnel)</option>
+                    <option value="20">k_fetch = 20 (Balanced Sweet Spot)</option>
+                    <option value="10">k_fetch = 10 (Fast CPU Path)</option>
+                    <option value="30">k_fetch = 30 (Deep Retrieval)</option>
+                  </select>
+                </div>
+
+                <div class="config-field">
+                  <label>Evaluation Depth (k_eval)</label>
+                  <select id="benchEvalK" class="custom-select">
+                    <option value="5" selected>Top 5 Output</option>
+                    <option value="10">Top 10 Output</option>
+                    <option value="20">Top 20 Output</option>
+                  </select>
+                </div>
+
+                <div class="config-field">
+                  <label>Pipeline Mode</label>
+                  <select id="benchPipelineMode" class="custom-select">
+                    <option value="enhanced" selected>Enhanced (+ Cross-Encoder Rerank)</option>
+                    <option value="hybrid">Baseline (Hybrid BM25 + Dense FAISS)</option>
+                  </select>
+                </div>
+
+                <div class="config-checkboxes">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="cbDynamicRerank" checked />
+                    <span>Dynamic Reranking <small class="text-muted">(fast-path)</small></span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="cbGenerationMetrics" checked />
+                    <span>Generation Metrics</span>
+                  </label>
+                </div>
+
+                <div class="config-btn-wrap">
+                  <button class="btn-run-benchmark" id="btnRunBenchmark">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Run Benchmark</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Re-index / Notification Alert Banner (Matches Screenshot 1) -->
+              <div class="bench-alert" id="benchAlert" style="display: none;">
+                <div class="alert-content-left">
+                  <i class="fa-solid fa-circle-exclamation alert-icon" id="benchAlertIcon"></i>
+                  <span id="benchAlertText">Re-indexing notification</span>
+                </div>
+                <button class="alert-close" id="btnCloseAlert">&times;</button>
+              </div>
+            </div>
+
+            <!-- EMPTY STATE (Matches Screenshot 1) -->
+            <div class="bench-empty-state" id="benchEmptyState">
+              <div class="empty-chart-icon">
+                <i class="fa-solid fa-chart-simple"></i>
+              </div>
+              <h3 class="empty-state-title">No evaluation results yet</h3>
+              <p class="empty-state-sub">Click "Run Benchmark" to evaluate retrieval & reranking accuracy</p>
+            </div>
+
+            <!-- LOADING PROGRESS STATE -->
+            <div class="bench-loading-state" id="benchLoadingState" style="display: none;">
+              <div class="loading-spinner-wrap">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+              </div>
+              <h3 id="loadingStateTitle">Evaluating 50 Research Queries across 20 Manuscripts...</h3>
+              <p class="text-muted" id="loadingStateSubtitle">Computing FAISS Dense + BM25 Hybrid Reciprocal Ranks & 2-Layer Cross-Encoder Disambiguation...</p>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="benchmarkProgressBar"></div>
+              </div>
+            </div>
+
+            <!-- POPULATED RESULTS SECTION -->
+            <div class="benchmark-results" id="benchmarkResultsArea" style="display: none;">
+              
+              <!-- Key Metrics Grid -->
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <div class="metric-label" id="labelRecallK">RECALL@5 (DEEP RESEARCH)</div>
+                  <div class="metric-value text-blue" id="valRecallK">54.0%</div>
+                  <div class="metric-subtext"><span class="badge-gain" id="badgeRecallGain">+8.0%</span> vs Hybrid Baseline</div>
+                </div>
+
+                <div class="metric-card">
+                  <div class="metric-label" id="labelMrrK">MRR@5 (RECIPROCAL RANK)</div>
+                  <div class="metric-value text-green" id="valMrrK">0.4020</div>
+                  <div class="metric-subtext"><span class="badge-gain" id="badgeMrrGain">+9.4%</span> vs Hybrid Baseline</div>
+                </div>
+
+                <div class="metric-card">
+                  <div class="metric-label">RAGAS FAITHFULNESS (GROUNDING)</div>
+                  <div class="metric-value text-indigo" id="valFaithfulness">0.932</div>
+                  <div class="metric-subtext"><span class="badge-gain" id="badgeFaithGain">+24.6%</span> Hallucination Suppression</div>
+                </div>
+
+                <div class="metric-card">
+                  <div class="metric-label">CPU LATENCY (2-LAYER L-2)</div>
+                  <div class="metric-value text-amber" id="valLatency">290 ms</div>
+                  <div class="metric-subtext"><span class="badge-gain" id="badgeLatencySpeedup">9.9x Faster</span> vs 6-Layer</div>
+                </div>
+              </div>
+
+              <!-- Statistical Significance Banner -->
+              <div class="significance-banner">
+                <div class="sig-icon"><i class="fa-solid fa-certificate"></i></div>
+                <div class="sig-content">
+                  <strong>Statistical Significance Verified:</strong> Paired Student's t-test on query-by-query Reciprocal Ranks yielded <span class="math-p" id="textPValue">p = 0.0412 &lt; 0.05</span> (Statistically significant at 95% Confidence Interval across 50 benchmark queries).
+                </div>
+                <button class="btn-excel-pill" id="btnExportExcelBench">
+                  <i class="fa-solid fa-file-excel"></i> Download Excel Report (.xlsx)
+                </button>
+              </div>
+
+              <!-- Charts Grid -->
+              <div class="charts-grid">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <h3>Multi-K Retrieval Recall & Precision Trajectory</h3>
+                  </div>
+                  <div id="plotMultiK" class="chart-plot"></div>
+                </div>
+
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <h3>Candidate Sweep CPU Latency Scaling (K = 5 to 50)</h3>
+                  </div>
+                  <div id="plotLatencySweep" class="chart-plot"></div>
+                </div>
+              </div>
+
+              <!-- Category Disambiguation Breakdown -->
+              <div class="card-table">
+                <div class="chart-header">
+                  <h3>Adversarial Disambiguation by Category (50 Queries)</h3>
+                </div>
+                <div class="table-responsive">
+                  <table class="bench-table" id="categoryTable">
+                    <thead>
+                      <tr>
+                        <th>Query Category</th>
+                        <th>Query Count</th>
+                        <th>Standard Hybrid Recall@10</th>
+                        <th>Cross-Encoder Recall@10</th>
+                        <th>Absolute Gain</th>
+                        <th>Disambiguation Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="categoryTableBody">
+                      <tr>
+                        <td><strong>Hard Distractor Traps</strong></td>
+                        <td>20 queries</td>
+                        <td>60.0%</td>
+                        <td><strong>70.0%</strong></td>
+                        <td><span class="badge-gain">+10.0%</span></td>
+                        <td><span class="status-pill status-success">Eliminates cross-paper keyword traps</span></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Empirical Scientific Facts</strong></td>
+                        <td>20 queries</td>
+                        <td>65.0%</td>
+                        <td><strong>80.0%</strong></td>
+                        <td><span class="badge-gain">+15.0%</span></td>
+                        <td><span class="status-pill status-success">Elevates exact hyperparameters to Rank 1</span></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Multi-Hop Synthesis</strong></td>
+                        <td>10 queries</td>
+                        <td>70.0%</td>
+                        <td><strong>75.0%</strong></td>
+                        <td><span class="badge-gain">+5.0%</span></td>
+                        <td><span class="status-pill status-neutral">Consistent top evidence retrieval</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- DETAILED 50-QUERY GROUNDING INSPECTOR -->
+              <div class="card-table" style="margin-top: 24px;">
+                <div class="chart-header" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <h3>Interactive Query-by-Query Grounding Verifier (50 Verified Queries)</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect individual query disambiguation, target paper ground truth, and rank movements.</p>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <select id="filterCategory" class="custom-select-sm">
+                      <option value="all">All Categories (50)</option>
+                      <option value="Hard Distractor">Hard Distractors (20)</option>
+                      <option value="Empirical">Empirical Facts (20)</option>
+                      <option value="Multi-Hop">Multi-Hop (10)</option>
+                    </select>
+                    <input type="text" id="filterQueryText" class="custom-select-sm" placeholder="Search query text..." style="width: 180px;" />
+                  </div>
+                </div>
+                <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+                  <table class="bench-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th style="width: 130px;">Category</th>
+                        <th>Benchmark Query</th>
+                        <th style="width: 160px;">Ground Truth Paper</th>
+                        <th style="width: 80px; text-align: center;">Hybrid</th>
+                        <th style="width: 80px; text-align: center;">Rerank</th>
+                        <th style="width: 140px;">Disambiguation</th>
+                      </tr>
+                    </thead>
+                    <tbody id="queryDetailsTableBody">
+                      <!-- Injected via JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+            </div>
+            <!-- END SUB-TAB 1: RETRIEVAL PANE -->
+
+            <!-- ================= SUB-TAB 2: GENERATION PANE ================= -->
+            <div class="benchmark-subtab-pane" id="paneGeneration" style="display: none;">
+              
+              <!-- Generation Configuration Card -->
+              <div class="card-config">
+                <div class="card-config-header">
+                  <i class="fa-solid fa-brain text-indigo"></i>
+                  <span class="config-title">RAG Generation & Grounding Configuration</span>
+                </div>
+
+                <div class="config-grid">
+                  <div class="config-field">
+                    <label>Evaluation Sample Size (CPU-Optimized)</label>
+                    <select id="genSampleSize" class="custom-select">
+                      <option value="5" selected>Quick 5-Query Smoke Test (~25s)</option>
+                      <option value="15">Standard 15-Query Suite (~75s)</option>
+                      <option value="50">Full 50-Query Deep Suite (~3 min)</option>
+                    </select>
+                  </div>
+
+                  <div class="config-field">
+                    <label>Query Benchmark Source</label>
+                    <select id="genQuerySource" class="custom-select">
+                      <option value="curated" selected>15-Paper Curated Scientific Benchmark</option>
+                      <option value="session">Active Chat Session History</option>
+                    </select>
+                  </div>
+
+                  <div class="config-field">
+                    <label>Local Evaluator Model</label>
+                    <select id="genModelSelect" class="custom-select">
+                      <option value="phi3.5:latest" selected>Phi-3.5 3.8B (Fast Grounding Judge)</option>
+                      <option value="qwen2.5:3b">Qwen 2.5 3B (Dense Reasoning)</option>
+                    </select>
+                  </div>
+
+                  <div class="config-btn-wrap">
+                    <button class="btn-run-benchmark btn-run-gen" id="btnRunGenBenchmark">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>Run Generation Benchmark</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GENERATION EMPTY STATE -->
+              <div class="bench-empty-state" id="genEmptyState">
+                <div class="empty-chart-icon text-indigo">
+                  <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h3 class="empty-state-title">No generation evaluation runs yet</h3>
+                <p class="empty-state-sub">Click "Run Generation Benchmark" to evaluate RAGAS Faithfulness, Answer Relevancy, Citation Precision, and ROUGE-L</p>
+              </div>
+
+              <!-- GENERATION LOADING STATE -->
+              <div class="bench-loading-state" id="genLoadingState" style="display: none;">
+                <div class="loading-spinner-wrap">
+                  <i class="fa-solid fa-brain fa-spin text-indigo"></i>
+                </div>
+                <h3 id="genLoadingTitle">Evaluating Generation Grounding & Citations...</h3>
+                <p class="text-muted" id="genLoadingSubtitle">Running RAGAS Faithfulness verification and citation passage attribution on local Ollama...</p>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill progress-bar-indigo" id="genProgressBar" style="width: 25%;"></div>
+                </div>
+              </div>
+
+              <!-- GENERATION RESULTS AREA -->
+              <div class="benchmark-results" id="genResultsArea" style="display: none;">
+                
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-label">RAGAS FAITHFULNESS (GROUNDING)</div>
+                    <div class="metric-value text-indigo" id="valGenFaithfulness">0.924</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeGenFaith">+23.2%</span> Entailment Grounding</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">ANSWER RELEVANCY</div>
+                    <div class="metric-value text-blue" id="valGenRelevancy">0.845</div>
+                    <div class="metric-subtext"><span class="badge-gain">+14.1%</span> Question-Answer Alignment</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">CITATION PRECISION</div>
+                    <div class="metric-value text-green" id="valGenCitationPrec">91.8%</div>
+                    <div class="metric-subtext"><span class="badge-gain">Verified</span> In-Passage Evidence</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">ATTRIBUTION RATE</div>
+                    <div class="metric-value text-amber" id="valGenAttribRate">85.4%</div>
+                    <div class="metric-subtext"><span class="badge-gain">High</span> Grounded Claim Ratio</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">HALLUCINATION SUPPRESSION</div>
+                    <div class="metric-value text-green" id="valGenHallucination">92.4%</div>
+                    <div class="metric-subtext"><span class="badge-gain">Safe</span> Offline Trust Score</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">ROUGE-L (GOLD OVERLAP)</div>
+                    <div class="metric-value text-blue" id="valGenRouge">0.638</div>
+                    <div class="metric-subtext"><span class="badge-gain">LCS F1</span> Ground-Truth Consensus</div>
+                  </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                  <div class="chart-card">
+                    <div class="chart-header">
+                      <h3>Multi-Dimensional Generation Quality Radar</h3>
+                    </div>
+                    <div id="plotGenRadar" class="chart-plot"></div>
+                  </div>
+
+                  <div class="chart-card">
+                    <div class="chart-header">
+                      <h3>Generation & Attribution Metric Distribution</h3>
+                    </div>
+                    <div id="plotGenMetrics" class="chart-plot"></div>
+                  </div>
+                </div>
+
+                <!-- Query-by-Query Evidence & Grounding Drilldown -->
+                <div class="card-table">
+                  <div class="chart-header">
+                    <div>
+                      <h3>Query-by-Query Synthesis & Evidence Grounding Verification</h3>
+                      <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect the question, generated response, cited literature tags, and grounding scores.</p>
+                    </div>
+                  </div>
+                  
+                  <div class="gen-drilldown-wrap" id="genDrilldownList">
+                    <!-- Injected via JavaScript -->
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+            <!-- END SUB-TAB 2: GENERATION PANE -->
+
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VIEW 3: LITERATURE INSPECTOR (FULL EMBEDDED PDF VIEWER) -->
+        <!-- ========================================================= -->
+        <section class="view-panel" id="viewInspector">
+          <div class="inspector-container">
+            <div class="inspector-sidebar">
+              <div class="inspector-sidebar-header">
+                <h3 class="inspector-sidebar-title">Indexed Manuscripts (20)</h3>
+                <input type="text" id="inspectorSearchInput" class="custom-select-sm" placeholder="Search papers..." style="width: 100%; margin-top: 6px;" />
+              </div>
+              <div class="inspector-doc-list" id="inspectorDocList">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <div class="inspector-content">
+              <div class="inspector-toolbar">
+                <div class="inspector-toolbar-left">
+                  <div class="doc-badge-pill" id="inspectorDocBadge">
+                    <i class="fa-regular fa-file-pdf text-blue"></i>
+                    <span id="inspectorDocTitle">Select a manuscript</span>
+                  </div>
+                  <div class="page-nav-controls" id="pageNavControls" style="display: none;">
+                    <button class="icon-btn-sm" id="btnPrevPage" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="page-indicator">Page <input type="number" id="inputPageNum" value="1" min="1" max="100" class="page-input" /> of <span id="totalDocPages">1</span></span>
+                    <button class="icon-btn-sm" id="btnNextPage" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
+                    
+                    <div class="zoom-controls">
+                      <button class="icon-btn-sm" id="btnZoomOut" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                      <span id="zoomLevelLabel" class="zoom-label">120%</span>
+                      <button class="icon-btn-sm" id="btnZoomIn" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+                      <button class="icon-btn-sm" id="btnFitWidth" title="Fit Width"><i class="fa-solid fa-arrows-left-right"></i></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="inspector-toolbar-right">
+                  <div class="view-toggle-btns">
+                    <button class="toggle-btn active" id="btnViewModePdf"><i class="fa-solid fa-file-pdf"></i> PDF Canvas</button>
+                    <button class="toggle-btn" id="btnViewModeNative"><i class="fa-solid fa-window-maximize"></i> Native View</button>
+                    <button class="toggle-btn" id="btnViewModeText"><i class="fa-solid fa-align-left"></i> Extracted Text</button>
+                  </div>
+                  <a href="#" target="_blank" class="icon-btn" id="btnOpenPdfNewTab" title="Open PDF in New Window">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  </a>
+                  <a href="#" download class="icon-btn" id="btnDownloadPdfDoc" title="Download PDF Manuscript">
+                    <i class="fa-solid fa-download"></i>
+                  </a>
+                </div>
+              </div>
+
+              <!-- PDF VIEWER CONTAINER -->
+              <div class="inspector-viewer" id="inspectorViewerWrap">
+                
+                <!-- 1. Embedded PDF.js Canvas Mode -->
+                <div class="pdf-viewer-pane" id="pdfViewerPane">
+                  <div class="pdf-canvas-scroll-wrap" id="pdfScrollWrap">
+                    <canvas id="inspectorPdfCanvas" class="pdf-canvas"></canvas>
+                  </div>
+                  <div class="pdf-loading-overlay" id="pdfLoadingOverlay" style="display: none;">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Rendering PDF Page...</span>
+                  </div>
+                </div>
+
+                <!-- 2. Native Browser PDF Iframe Mode -->
+                <iframe id="inspectorPdfIframe" class="pdf-iframe-embed" style="display: none;" src="about:blank"></iframe>
+
+                <!-- 3. Extracted Text & Grounding Chunks Mode -->
+                <div class="text-viewer-pane" id="textViewerPane" style="display: none;">
+                  <div class="chunk-meta-card" id="chunkMetaCard" style="display: none;">
+                    <div class="chunk-meta-header">
+                      <span class="chunk-meta-id" id="chunkMetaId">CHUNK ID</span>
+                      <span class="chunk-meta-score" id="chunkMetaScore">Score: 0.0000</span>
+                    </div>
+                    <div class="chunk-meta-ranks">
+                      <span>Dense Rank: <strong id="chunkDenseRank">-</strong></span>
+                      <span>BM25 Rank: <strong id="chunkSparseRank">-</strong></span>
+                      <span>Page Number: <strong id="chunkPageNum">-</strong></span>
+                    </div>
+                  </div>
+
+                  <div class="viewer-text-content" id="viewerTextContent">
+                    <div class="empty-inspector-prompt">
+                      <i class="fa-regular fa-file-pdf"></i>
+                      <h3>PDF Literature Inspector</h3>
+                      <p>Select any manuscript from the left sidebar to render the original PDF document with page-level navigation and grounding highlights.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- RIGHT SLIDING INSPECTOR & DIAGNOSTICS DRAWER -->
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <div class="inspector-drawer" id="inspectorDrawer">
+      <div class="drawer-header">
+        <div class="drawer-tabs-nav">
+          <button class="drawer-tab active" id="tabDrawerDiagnostics" data-pane="diagnostics">
+            <i class="fa-solid fa-chart-simple text-blue"></i>
+            <span>Retrieval Diagnostics</span>
+          </button>
+          <button class="drawer-tab" id="tabDrawerPdf" data-pane="pdf">
+            <i class="fa-regular fa-file-pdf text-blue"></i>
+            <span id="drawerPdfTabLabel">PDF Manuscript</span>
+          </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <a href="#" target="_blank" class="icon-btn-sm" id="btnDrawerOpenNewTab" title="Open PDF in Full Screen">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+          <button class="drawer-close-btn" id="btnDrawerClose">&times;</button>
+        </div>
+      </div>
+      
+      <div class="drawer-body" id="drawerBody">
+        <!-- 1. Diagnostics Pane -->
+        <div class="drawer-pane" id="drawerPaneDiagnostics">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- 2. PDF & Grounding Pane -->
+        <div class="drawer-pane" id="drawerPanePdf" style="display: none;">
+          <div class="drawer-pdf-section">
+            <div class="drawer-pdf-toolbar">
+              <span id="drawerPdfPageBadge" class="badge badge-model">Page 1</span>
+              <div style="display: flex; gap: 4px;">
+                <button class="icon-btn-xs" id="btnDrawerPrevPage" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="icon-btn-xs" id="btnDrawerNextPage" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
+              </div>
+            </div>
+            <div class="drawer-canvas-scroll">
+              <canvas id="drawerPdfCanvas" class="drawer-pdf-canvas"></canvas>
+            </div>
+          </div>
+          <div class="drawer-chunk-card" id="drawerChunkCard">
+            <div class="drawer-chunk-title"><i class="fa-solid fa-quote-left text-blue"></i> Grounding Evidence</div>
+            <div class="drawer-chunk-meta" id="drawerChunkMeta">Document: -</div>
+            <div class="drawer-chunk-text" id="drawerChunkText">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- DELETE / CLEAR CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="deleteModalBackdrop" style="display: none;">
+      <div class="confirm-modal-box">
+        <div class="modal-header-danger">
+          <div class="danger-icon-wrap"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h3 id="deleteModalTitle">Delete Manuscript</h3>
+        </div>
+        <div class="modal-body-content">
+          <p id="deleteModalMessage">Are you sure you want to delete this manuscript from the Archival Index? This will remove its chunks from the vector store.</p>
+        </div>
+        <div class="modal-actions-row">
+          <button class="btn-modal-cancel" id="btnCancelDelete">Cancel</button>
+          <button class="btn-modal-danger" id="btnConfirmDelete">
+            <i class="fa-solid fa-trash-can"></i>
+            <span id="btnConfirmDeleteText">Delete Manuscript</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

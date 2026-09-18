@@ -1,0 +1,6 @@
+{
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "chunk_count": 4995,
+  "content_hash": "4cb4b22ddd4547d6b769ee0c6f13d89c513dae137af32b54eb3411311730a045",
+  "created_at": 1789565712.232207
+}

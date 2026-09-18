@@ -1,0 +1,30 @@
+{
+  "dataset": "scifact",
+  "corpus_size": 5183,
+  "queries_count": 300,
+  "models": {
+    "dense_bi_encoder": "sentence-transformers/all-MiniLM-L6-v2",
+    "cross_encoder_reranker": "cross-encoder/ms-marco-MiniLM-L-2-v2"
+  },
+  "metrics": {
+    "dense": {
+      "NDCG@10": 0.6451,
+      "MRR@10": 0.6047,
+      "Recall@10": 0.7833,
+      "Recall@100": 0.925,
+      "MAP@10": 0.5959
+    },
+    "reranked": {
+      "NDCG@10": 0.6393,
+      "MRR@10": 0.596,
+      "Recall@10": 0.7906,
+      "Recall@100": 0.892,
+      "MAP@10": 0.5872
+    },
+    "delta": {
+      "NDCG@10": -0.0057,
+      "MRR@10": -0.0088,
+      "Recall@10": 0.0072
+    }
+  }
+}
