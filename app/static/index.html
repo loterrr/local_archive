@@ -14,7 +14,7 @@
   <script src="/static/vendor/pdf.min.js"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v=2.1" />
 </head>
 
 <body>
@@ -61,7 +61,7 @@
           <span class="status-dot online"></span>
           <span id="systemStatusText">Offline Core Active</span>
         </div>
-        <div class="model-badge-mini" id="sidebarModelBadge">phi3.5:latest</div>
+        <div class="model-badge-mini" id="sidebarModelBadge">qwen2.5:3b</div>
       </div>
     </aside>
 
@@ -73,7 +73,10 @@
         <div class="topbar-left">
           <h1 class="brand-title">The Archive</h1>
           <div class="topbar-badges">
-            <span class="badge badge-model"><span class="dot-green"></span> <span id="topbarModelName">phi3.5:latest</span></span>
+            <div class="badge badge-model" title="Default Active Model">
+              <span class="dot-green"></span>
+              <span id="topbarModelDisplay" class="model-display-text">qwen2.5:3b</span>
+            </div>
             <span class="badge badge-mode" id="topbarModeBadge">enhanced</span>
             <span class="badge badge-chunks"><i class="fa-solid fa-database"></i> 2,131 chunks</span>
           </div>
@@ -121,7 +124,7 @@
               <div class="welcome-card" id="welcomeCard">
                 <div class="welcome-badge">ACADEMIC RESEARCH WORKSPACE</div>
                 <h2 class="welcome-title">Synthesize Literature & Verify Findings</h2>
-                <p class="welcome-desc">Query the 20 indexed peer-reviewed manuscripts with verifiable source citations, late interaction disambiguation, and hallucination suppression.</p>
+                <p class="welcome-desc">Query indexed peer-reviewed manuscripts with verifiable source citations, late interaction disambiguation, and hallucination suppression.</p>
                 
                 <div class="quick-prompts-label">RECOMMENDED INVESTIGATIONS:</div>
                 <div class="quick-prompts-grid">
@@ -186,14 +189,27 @@
               </div>
             </div>
 
-            <!-- Sub-Tab Navigation Bar -->
+            <!-- Sub-Tab Navigation Bar & Corpus Mode Switcher -->
             <div class="benchmark-subnav">
-              <button class="subnav-btn active" id="btnSubnavRetrieval">
-                <i class="fa-solid fa-magnifying-glass-chart"></i> <span>Retrieval Quality & BEIR</span>
-              </button>
-              <button class="subnav-btn" id="btnSubnavGeneration">
-                <i class="fa-solid fa-brain"></i> <span>Generation & Grounding (RAGAS)</span>
-              </button>
+              <div class="subnav-tabs-group">
+                <button class="subnav-btn active" id="btnSubnavRetrieval">
+                  <i class="fa-solid fa-magnifying-glass-chart"></i> <span>Retrieval Quality & BEIR</span>
+                </button>
+                <button class="subnav-btn" id="btnSubnavGeneration">
+                  <i class="fa-solid fa-brain"></i> <span>Generation & Grounding (RAGAS)</span>
+                </button>
+              </div>
+
+              <div class="corpus-mode-switcher">
+                <button class="corpus-btn active" id="btnModeActiveCorpus" title="Benchmark across all active indexed manuscripts">
+                  <span class="dot-green"></span>
+                  <span id="corpusActiveLabel">Active Ingested Corpus (<span id="activeDocCountBadge">5</span> files)</span>
+                </button>
+                <button class="corpus-btn" id="btnModeBaseline" title="View historical 20-manuscript thesis baseline">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span>20-Doc Thesis Baseline</span>
+                </button>
+              </div>
             </div>
 
             <!-- ================= SUB-TAB 1: RETRIEVAL PANE ================= -->
@@ -453,17 +469,17 @@
                   <div class="config-field">
                     <label>Query Benchmark Source</label>
                     <select id="genQuerySource" class="custom-select">
-                      <option value="curated" selected>15-Paper Curated Scientific Benchmark</option>
-                      <option value="session">Active Chat Session History</option>
+                      <option value="active" selected>Active Ingested Corpus (Auto-Generated)</option>
+                      <option value="curated">Historical 20-Doc Baseline (Pre-computed)</option>
                     </select>
                   </div>
 
                   <div class="config-field">
-                    <label>Local Evaluator Model</label>
-                    <select id="genModelSelect" class="custom-select">
-                      <option value="phi3.5:latest" selected>Phi-3.5 3.8B (Fast Grounding Judge)</option>
-                      <option value="qwen2.5:3b">Qwen 2.5 3B (Dense Reasoning)</option>
-                    </select>
+                    <label>Evaluator Model (Default)</label>
+                    <div class="custom-select-readonly" id="genModelDisplay">
+                      <i class="fa-solid fa-microchip text-indigo" style="margin-right: 6px;"></i>
+                      <span id="genModelLabel">qwen2.5:3b</span>
+                    </div>
                   </div>
 
                   <div class="config-btn-wrap">
@@ -752,6 +768,6 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2.1"></script>
 </body>
 </html>

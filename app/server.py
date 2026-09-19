@@ -50,7 +50,7 @@ from src.llm import (
 )
 from src.ingest import Chunk, extract_pdf, chunk_page
 from src.evaluation import recall_at_k, precision_at_k, reciprocal_rank_at_k
-from src.ragas_eval import evaluate_live_query, deep_audit_claim_verification
+from src.ragas_eval import evaluate_live_query, deep_audit_claim_verification, evaluate_active_corpus
 
 app = FastAPI(title="Nexus: The Archive - Local RAG & Empirical Benchmark Suite")
 
@@ -614,6 +614,29 @@ async def download_gguf_endpoint(req: DownloadGgufRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to download GGUF model: {e}")
 
+class SetActiveModelRequest(BaseModel):
+    model_name: str
+
+@app.post("/api/models/set-active")
+# Switch the active language model dynamically (Ollama or in-process GGUF).
+async def set_active_model(req: SetActiveModelRequest):
+    global settings
+    name = req.model_name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Model name cannot be empty")
+    
+    if name.startswith("gguf:"):
+        name = name[5:]
+    elif name.startswith("ollama:"):
+        name = name[7:]
+    
+    settings.llm_model = name
+    return {
+        "success": True,
+        "active_model": settings.llm_model,
+        "message": f"Active model successfully switched to {settings.llm_model}"
+    }
+
 @app.post("/api/benchmark/run")
 # Execute the 50-query scientific benchmark across BM25, FAISS, and Cross-Encoder, computing Recall, MRR, and p-value.
 async def run_benchmark(req: BenchmarkRunRequest):
@@ -871,6 +894,43 @@ async def get_cached_benchmark():
         out["dataset"] = json.loads(dataset_file.read_text(encoding="utf-8"))
     
     return sanitize_json(out)
+
+
+class ActiveBenchmarkRunRequest(BaseModel):
+    sample_size: int = 50
+    llm_model: Optional[str] = None
+
+@app.post("/api/benchmark/active/run")
+# Execute the live dynamic benchmark across all documents in the active index.
+async def run_active_benchmark(req: ActiveBenchmarkRunRequest):
+    idx = get_loaded_index()
+    if idx is None or not idx.chunks:
+        raise HTTPException(status_code=400, detail="Search index is empty or not loaded")
+    
+    reranker = get_reranker_instance()
+    active_llm = req.llm_model or settings.llm_model
+    llm = LocalLLM(settings.llm_base_url, active_llm)
+    
+    result = evaluate_active_corpus(idx, reranker, llm, sample_size=req.sample_size)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("message", "Benchmark failed"))
+    
+    cache_active = ROOT / "data" / "cache_active_corpus_benchmark.json"
+    cache_active.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    
+    return sanitize_json(result)
+
+@app.get("/api/benchmark/active/cached")
+# Retrieve latest cached active corpus benchmark if available.
+async def get_cached_active_benchmark():
+    cache_active = ROOT / "data" / "cache_active_corpus_benchmark.json"
+    if cache_active.exists():
+        try:
+            data = json.loads(cache_active.read_text(encoding="utf-8"))
+            return sanitize_json(data)
+        except Exception:
+            pass
+    return {"status": "none", "message": "No active corpus benchmark cached yet"}
 
 
 @app.get("/api/download/excel")

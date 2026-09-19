@@ -1,6 +1,3 @@
-// =====================================================================
-// NEXUS: THE ARCHIVE — CLIENT APPLICATION ENGINE
-// =====================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
   // State
@@ -8,8 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     activeView: "journal",
     documents: [],
     cachedBenchmark: null,
+    cachedActiveBenchmark: null,
     latestBenchmarkResult: null,
-    graphData: null,
+    benchmarkCorpusMode: "active",
     selectedDoc: null,
     chatHistory: [],
     status: null,
@@ -39,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const benchLoadingState = document.getElementById("benchLoadingState");
   const benchmarkResultsArea = document.getElementById("benchmarkResultsArea");
   const benchmarkProgressBar = document.getElementById("benchmarkProgressBar");
-  
+
   const inspectorDrawer = document.getElementById("inspectorDrawer");
   const drawerBackdrop = document.getElementById("drawerBackdrop");
   const btnDrawerClose = document.getElementById("btnDrawerClose");
@@ -66,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupBenchmarkListeners();
     setupInspectorListeners();
     setupDeletionListeners();
-    
+
     // Check URL path for deep routing (e.g. /evaluate)
     const currentPath = window.location.pathname;
     if (currentPath === "/evaluate" || currentPath.includes("benchmark")) {
@@ -80,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await fetchSystemStatus();
     await fetchDocuments();
     await fetchCachedBenchmark();
-    await fetchGraphData();
 
     // Auto-select first manuscript in Inspector if none selected
     if (state.documents.length > 0 && !state.selectedDoc) {
@@ -124,21 +121,49 @@ document.addEventListener("DOMContentLoaded", () => {
       window.history.pushState({ view: viewName }, "", newPath);
     }
 
-    if (viewName === "benchmark" && state.latestBenchmarkResult) {
-      renderBenchmarkPlots(state.cachedBenchmark || {});
-    } else if (viewName === "graph" && state.graphData) {
-      renderKnowledgeGraph(state.graphData);
+    if (viewName === "benchmark") {
+      if (state.latestBenchmarkResult) {
+        renderBenchmarkPlots(state.cachedBenchmark || {});
+      }
+      setTimeout(resizeAllPlots, 60);
     }
   }
+
+  function resizeAllPlots() {
+    ["plotMultiK", "plotLatencySweep", "plotGenRadar", "plotGenMetrics"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.data && typeof Plotly !== "undefined") {
+        Plotly.Plots.resize(el);
+      }
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    resizeAllPlots();
+  });
 
   // --- FETCH STATUS & DOCUMENTS ---
   async function fetchSystemStatus() {
     try {
       const res = await fetch("/api/status");
       const data = await res.json();
-      state.status = data;
-      document.getElementById("topbarModelName").textContent = data.active_model || "phi3.5:latest";
-      document.getElementById("sidebarModelBadge").textContent = data.active_model || "phi3.5";
+      const activeModel = data.active_model || "qwen2.5:3b";
+      state.status.active_model = activeModel;
+
+      const modelDisplay = document.getElementById("topbarModelDisplay");
+      if (modelDisplay) {
+        modelDisplay.textContent = activeModel;
+      }
+
+      const sidebarBadge = document.getElementById("sidebarModelBadge");
+      if (sidebarBadge) {
+        sidebarBadge.textContent = activeModel;
+      }
+
+      const genModelLabel = document.getElementById("genModelLabel");
+      if (genModelLabel) {
+        genModelLabel.textContent = activeModel;
+      }
       document.getElementById("topbarModeBadge").textContent = "enhanced";
       const benchCount = document.getElementById("benchManuscriptsCount");
       if (benchCount) benchCount.textContent = `${data.manuscripts_count || 20} manuscripts`;
@@ -159,6 +184,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const benchCount = document.getElementById("benchManuscriptsCount");
       if (benchCount) benchCount.textContent = `${state.documents.length} manuscripts`;
+      const activeBadge = document.getElementById("activeDocCountBadge");
+      if (activeBadge) activeBadge.textContent = state.documents.length;
+      const welcomeDesc = document.querySelector(".welcome-desc");
+      if (welcomeDesc) {
+        welcomeDesc.textContent = `Query the ${state.documents.length} indexed manuscripts with verifiable source citations, late interaction disambiguation, and hallucination suppression.`;
+      }
     } catch (err) {
       console.error("Failed to load documents:", err);
     }
@@ -240,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await fetchDocuments();
       await fetchSystemStatus();
-      if (typeof fetchGraphData === "function") await fetchGraphData();
 
     } catch (err) {
       showAlert(`Upload error: ${err.message}`, "error");
@@ -271,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <i class="fa-regular fa-trash-can"></i>
         </button>
       `;
-      
+
       const deleteBtn = item.querySelector(".btn-delete-doc");
       deleteBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -334,11 +364,12 @@ document.addEventListener("DOMContentLoaded", () => {
     appendUserMessage(query);
 
     // Assistant placeholder
+    const docCount = state.documents && state.documents.length ? state.documents.length : "indexed";
     const assistantCard = document.createElement("div");
     assistantCard.className = "message-assistant";
     assistantCard.innerHTML = `
       <div class="assistant-body">
-        <p><i class="fa-solid fa-spinner fa-spin text-blue"></i> Retrieving literature across 20 manuscripts & synthesizing findings...</p>
+        <p><i class="fa-solid fa-spinner fa-spin text-blue"></i> Retrieving literature across ${docCount} manuscripts & synthesizing findings...</p>
       </div>
     `;
     chatMessages.appendChild(assistantCard);
@@ -549,10 +580,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Cancel previous render task if active
     if (canvasId === "inspectorPdfCanvas" && inspectorRenderTask) {
-      try { inspectorRenderTask.cancel(); } catch (e) {}
+      try { inspectorRenderTask.cancel(); } catch (e) { }
       inspectorRenderTask = null;
     } else if (canvasId === "drawerPdfCanvas" && drawerRenderTask) {
-      try { drawerRenderTask.cancel(); } catch (e) {}
+      try { drawerRenderTask.cancel(); } catch (e) { }
       drawerRenderTask = null;
     }
 
@@ -931,13 +962,13 @@ document.addEventListener("DOMContentLoaded", () => {
           </thead>
           <tbody>
             ${diagList.map(item => {
-              let moveHtml = `<span class="rank-badge-neutral">—</span>`;
-              if (item.rank_delta > 0) {
-                moveHtml = `<span class="rank-badge-promoted"><i class="fa-solid fa-arrow-up"></i> +${item.rank_delta}</span>`;
-              } else if (item.rank_delta < 0) {
-                moveHtml = `<span class="rank-badge-demoted"><i class="fa-solid fa-arrow-down"></i> ${item.rank_delta}</span>`;
-              }
-              return `
+      let moveHtml = `<span class="rank-badge-neutral">—</span>`;
+      if (item.rank_delta > 0) {
+        moveHtml = `<span class="rank-badge-promoted"><i class="fa-solid fa-arrow-up"></i> +${item.rank_delta}</span>`;
+      } else if (item.rank_delta < 0) {
+        moveHtml = `<span class="rank-badge-demoted"><i class="fa-solid fa-arrow-down"></i> ${item.rank_delta}</span>`;
+      }
+      return `
                 <tr class="${item.is_selected ? 'selected-chunk' : ''}" data-chunk-id="${item.chunk_id}" data-filename="${item.filename}" data-page="${item.page}">
                   <td><strong>#${item.final_rank}</strong></td>
                   <td style="color: var(--text-muted);">#${item.initial_hybrid_rank}</td>
@@ -954,7 +985,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   </td>
                 </tr>
               `;
-            }).join("")}
+    }).join("")}
           </tbody>
         </table>
       </div>
@@ -1004,7 +1035,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function openInspectorDrawer(chunkId, filename, page = 1) {
     if (!inspectorDrawer || !drawerBackdrop) return;
-    
+
     let targetFile = filename;
     let targetPage = parseInt(page || 1, 10);
     let chunkData = null;
@@ -1226,7 +1257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function selectInspectorDoc(filename, page = 1) {
     state.selectedDoc = filename;
-    
+
     // Update active highlight
     document.querySelectorAll(".inspector-doc-item").forEach(i => {
       i.classList.toggle("active", i.textContent.includes(filename));
@@ -1287,6 +1318,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubnavGeneration?.classList.remove("active");
       if (paneRetrieval) paneRetrieval.style.display = "flex";
       if (paneGeneration) paneGeneration.style.display = "none";
+      setTimeout(resizeAllPlots, 60);
     });
 
     btnSubnavGeneration?.addEventListener("click", () => {
@@ -1294,6 +1326,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubnavRetrieval?.classList.remove("active");
       if (paneGeneration) paneGeneration.style.display = "flex";
       if (paneRetrieval) paneRetrieval.style.display = "none";
+      setTimeout(resizeAllPlots, 60);
     });
 
     // 1. Run Retrieval Benchmark Button
@@ -1314,6 +1347,163 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. Query Details Filter Listeners
     filterCategory?.addEventListener("change", applyQueryFilters);
     filterQueryText?.addEventListener("input", applyQueryFilters);
+
+    // 6. Corpus Mode Switcher (Active Ingested Corpus vs 20-Doc Baseline)
+    const btnModeActiveCorpus = document.getElementById("btnModeActiveCorpus");
+    const btnModeBaseline = document.getElementById("btnModeBaseline");
+
+    btnModeActiveCorpus?.addEventListener("click", () => {
+      state.benchmarkCorpusMode = "active";
+      btnModeActiveCorpus.classList.add("active");
+      btnModeBaseline?.classList.remove("active");
+      applyBenchmarkCorpusMode();
+    });
+
+    btnModeBaseline?.addEventListener("click", () => {
+      state.benchmarkCorpusMode = "baseline";
+      btnModeBaseline.classList.add("active");
+      btnModeActiveCorpus?.classList.remove("active");
+      applyBenchmarkCorpusMode();
+    });
+  }
+
+  function applyBenchmarkCorpusMode() {
+    const isBaseline = state.benchmarkCorpusMode === "baseline";
+    if (isBaseline) {
+      if (state.cachedBenchmark && state.cachedBenchmark.deep_eval) {
+        if (benchEmptyState) benchEmptyState.style.display = "none";
+        if (benchmarkResultsArea) benchmarkResultsArea.style.display = "block";
+        displayBenchmarkMetrics(state.cachedBenchmark.deep_eval, 5, "enhanced");
+        renderCategoryTable(state.cachedBenchmark.deep_eval.categories);
+        state.queryDetails = state.cachedBenchmark.deep_eval.query_details || [];
+        renderQueryDetailsTable(state.queryDetails);
+        renderBenchmarkPlots(state.cachedBenchmark || {});
+      }
+      if (state.cachedBenchmark && state.cachedBenchmark.ragas) {
+        const ragasData = state.cachedBenchmark.ragas;
+        if (genEmptyState) genEmptyState.style.display = "none";
+        if (genResultsArea) genResultsArea.style.display = "block";
+        displayGenerationBenchmarkMetrics(ragasData.summary?.reranked || ragasData.summary);
+        renderGenerationPlots(ragasData);
+        renderGenerationDrilldown(ragasData.reranked_details || []);
+      }
+    } else {
+      if (state.cachedActiveBenchmark) {
+        const act = state.cachedActiveBenchmark;
+        if (benchEmptyState) benchEmptyState.style.display = "none";
+        if (benchmarkResultsArea) benchmarkResultsArea.style.display = "block";
+        displayBenchmarkMetrics(act, 5, "enhanced");
+        renderCategoryTable(act.categories);
+        state.queryDetails = act.query_details || [];
+        renderQueryDetailsTable(state.queryDetails);
+        renderBenchmarkPlots(act);
+
+        if (genEmptyState) genEmptyState.style.display = "none";
+        if (genResultsArea) genResultsArea.style.display = "block";
+        displayGenerationBenchmarkMetrics(act.summary);
+        renderGenerationPlots(act);
+        renderGenerationDrilldown(act.details || []);
+      } else {
+        if (benchEmptyState) benchEmptyState.style.display = "flex";
+        if (benchmarkResultsArea) benchmarkResultsArea.style.display = "none";
+        if (genEmptyState) genEmptyState.style.display = "flex";
+        if (genResultsArea) genResultsArea.style.display = "none";
+      }
+    }
+  }
+
+  async function handleRunActiveCorpusBenchmark() {
+    const evalK = parseInt(document.getElementById("benchEvalK")?.value || "5", 10);
+    const sampleSize = 50;
+
+    if (btnRunBenchmark) {
+      btnRunBenchmark.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Evaluating Active Corpus...</span>`;
+      btnRunBenchmark.disabled = true;
+    }
+    const btnRunGen = document.getElementById("btnRunGenBenchmark");
+    if (btnRunGen) {
+      btnRunGen.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Evaluating Active Corpus...</span>`;
+      btnRunGen.disabled = true;
+    }
+
+    if (benchEmptyState) benchEmptyState.style.display = "none";
+    if (benchmarkResultsArea) benchmarkResultsArea.style.display = "none";
+    if (benchLoadingState) benchLoadingState.style.display = "flex";
+
+    const loadingTitle = document.getElementById("loadingStateTitle");
+    if (loadingTitle) {
+      loadingTitle.textContent = `Generating & Evaluating Queries across ${state.documents.length} Manuscripts...`;
+    }
+
+    let progress = 10;
+    if (benchmarkProgressBar) benchmarkProgressBar.style.width = "10%";
+    const progInterval = setInterval(() => {
+      if (progress < 90) {
+        progress += 8;
+        if (benchmarkProgressBar) benchmarkProgressBar.style.width = `${progress}%`;
+      }
+    }, 600);
+
+    try {
+      const res = await fetch("/api/benchmark/active/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sample_size: sampleSize,
+          llm_model: state.status?.active_model || "qwen2.5:3b"
+        })
+      });
+
+      if (!res.ok) throw new Error("Active corpus benchmark execution failed");
+      const result = await res.json();
+      state.cachedActiveBenchmark = result;
+      state.latestBenchmarkResult = result;
+      state.queryDetails = result.query_details || [];
+
+      clearInterval(progInterval);
+      if (benchmarkProgressBar) benchmarkProgressBar.style.width = "100%";
+
+      setTimeout(() => {
+        if (benchLoadingState) benchLoadingState.style.display = "none";
+        if (benchmarkResultsArea) benchmarkResultsArea.style.display = "block";
+        if (genResultsArea) genResultsArea.style.display = "block";
+        if (genEmptyState) genEmptyState.style.display = "none";
+
+        displayBenchmarkMetrics(result, evalK, "enhanced");
+        renderCategoryTable(result.categories);
+        renderQueryDetailsTable(state.queryDetails);
+        renderBenchmarkPlots(result);
+
+        displayGenerationBenchmarkMetrics(result.summary);
+        renderGenerationPlots(result);
+        renderGenerationDrilldown(result.details || []);
+
+        showAlert(`Active Corpus Evaluated: ${result.num_queries} queries across ${result.total_manuscripts} manuscripts.`, "success");
+
+        if (btnRunBenchmark) {
+          btnRunBenchmark.innerHTML = `<i class="fa-solid fa-play"></i> <span>Run Benchmark</span>`;
+          btnRunBenchmark.disabled = false;
+        }
+        if (btnRunGen) {
+          btnRunGen.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Run Generation Benchmark</span>`;
+          btnRunGen.disabled = false;
+        }
+      }, 400);
+
+    } catch (err) {
+      clearInterval(progInterval);
+      if (benchLoadingState) benchLoadingState.style.display = "none";
+      if (benchEmptyState) benchEmptyState.style.display = "flex";
+      showAlert(`Active Benchmark error: ${err.message}`, "error");
+      if (btnRunBenchmark) {
+        btnRunBenchmark.innerHTML = `<i class="fa-solid fa-play"></i> <span>Run Benchmark</span>`;
+        btnRunBenchmark.disabled = false;
+      }
+      if (btnRunGen) {
+        btnRunGen.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Run Generation Benchmark</span>`;
+        btnRunGen.disabled = false;
+      }
+    }
   }
 
   async function handleReindex() {
@@ -1350,6 +1540,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleRunBenchmark() {
+    if (state.benchmarkCorpusMode === "active") {
+      return handleRunActiveCorpusBenchmark();
+    }
     const candidateK = parseInt(document.getElementById("benchCandidateK")?.value || "50", 10);
     const evalK = parseInt(document.getElementById("benchEvalK")?.value || "5", 10);
     const pipelineMode = document.getElementById("benchPipelineMode")?.value || "enhanced";
@@ -1399,7 +1592,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         if (benchLoadingState) benchLoadingState.style.display = "none";
         if (benchmarkResultsArea) benchmarkResultsArea.style.display = "block";
-        
+
         displayBenchmarkMetrics(result, evalK, pipelineMode);
         renderCategoryTable(result.categories);
         renderQueryDetailsTable(state.queryDetails);
@@ -1421,7 +1614,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayBenchmarkMetrics(res, evalK, pipelineMode) {
     const m = res.metrics;
-    
+
     // Labels
     const labelRecall = document.getElementById("labelRecallK");
     const labelMrr = document.getElementById("labelMrrK");
@@ -1431,7 +1624,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Values
     document.getElementById("valRecallK").textContent = m.recall_at_k;
     document.getElementById("badgeRecallGain").textContent = m.recall_gain;
-    
+
     document.getElementById("valMrrK").textContent = m.mrr_at_k;
     document.getElementById("badgeMrrGain").textContent = m.mrr_gain;
 
@@ -1508,6 +1701,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/benchmark/cached");
       const data = await res.json();
       state.cachedBenchmark = data;
+
+      const actRes = await fetch("/api/benchmark/active/cached");
+      const actData = await actRes.json();
+      if (actData && actData.status === "success") {
+        state.cachedActiveBenchmark = actData;
+      }
+      applyBenchmarkCorpusMode();
     } catch (err) {
       console.warn("Cached benchmark fetch warning:", err);
     }
@@ -1585,10 +1785,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- GENERATION BENCHMARK RUNNER & VISUALIZATIONS ---
   async function handleRunGenerationBenchmark() {
+    const genQuerySource = document.getElementById("genQuerySource")?.value || "active";
+    if (genQuerySource === "active" || state.benchmarkCorpusMode === "active") {
+      return handleRunActiveCorpusBenchmark();
+    }
     const btnRunGen = document.getElementById("btnRunGenBenchmark");
     const genSampleSize = parseInt(document.getElementById("genSampleSize")?.value || "5", 10);
-    const genQuerySource = document.getElementById("genQuerySource")?.value || "curated";
-    const genModelSelect = document.getElementById("genModelSelect")?.value || "phi3.5:latest";
+    const defaultModel = state.status?.active_model || "qwen2.5:3b";
 
     const genEmptyState = document.getElementById("genEmptyState");
     const genResultsArea = document.getElementById("genResultsArea");
@@ -1621,7 +1824,7 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({
           sample_size: genSampleSize,
           source: genQuerySource,
-          llm_model: genModelSelect
+          llm_model: defaultModel
         })
       });
 
@@ -1749,33 +1952,38 @@ document.addEventListener("DOMContentLoaded", () => {
       const card = document.createElement("div");
       card.className = "gen-drilldown-card";
 
-      const faithPillClass = item.faithfulness >= 0.85 ? "gen-score-high" : "gen-score-med";
-      const relPillClass = item.answer_relevancy >= 0.80 ? "gen-score-high" : "gen-score-med";
+      const questionText = item.question || item.query || "Evaluation Query";
+      const contexts = item.retrieved_contexts || item.passages || [];
+      const citationsCount = item.citations_found !== undefined ? item.citations_found : (item.citations_count || 1);
 
-      const ctxPills = (item.retrieved_contexts || []).map((ctx, i) => {
-        return `<span class="gen-ctx-tag" title="${escapeHtml(ctx.substring(0, 150))}...">[Passage ${i + 1}] ${escapeHtml(ctx.substring(0, 45))}...</span>`;
+      const faithPillClass = (item.faithfulness || 0) >= 0.85 ? "gen-score-high" : "gen-score-med";
+      const relPillClass = (item.answer_relevancy || 0) >= 0.80 ? "gen-score-high" : "gen-score-med";
+
+      const ctxPills = contexts.map((ctx, i) => {
+        const textStr = typeof ctx === "string" ? ctx : (ctx.text || "");
+        return `<span class="gen-ctx-tag" title="${escapeHtml(textStr.substring(0, 150))}...">[Passage ${i + 1}] ${escapeHtml(textStr.substring(0, 45))}...</span>`;
       }).join("");
 
       card.innerHTML = `
         <div class="gen-drilldown-header">
           <div class="gen-drilldown-question">
             <span style="color: var(--primary-blue);">#${idx + 1}</span>
-            <span>${escapeHtml(item.question)}</span>
+            <span>${escapeHtml(questionText)}</span>
           </div>
           <div class="gen-pill-badges">
-            <span class="gen-score-pill ${faithPillClass}">Faithfulness: ${Number(item.faithfulness).toFixed(2)}</span>
-            <span class="gen-score-pill ${relPillClass}">Relevancy: ${Number(item.answer_relevancy).toFixed(2)}</span>
-            <span class="gen-score-pill gen-score-high">Citations: ${item.citations_found || 0}</span>
+            <span class="gen-score-pill ${faithPillClass}">Faithfulness: ${Number(item.faithfulness || 0).toFixed(2)}</span>
+            <span class="gen-score-pill ${relPillClass}">Relevancy: ${Number(item.answer_relevancy || 0).toFixed(2)}</span>
+            <span class="gen-score-pill gen-score-high">Citations: ${citationsCount}</span>
           </div>
         </div>
 
         <div class="gen-answer-box">
-          <div class="gen-answer-label"><i class="fa-solid fa-sparkles text-indigo"></i> Generated Synthesis (Ollama Phi-3.5)</div>
-          <div>${escapeHtml(item.generated_answer)}</div>
+          <div class="gen-answer-label"><i class="fa-solid fa-sparkles text-indigo"></i> Generated Synthesis (Local Evaluator)</div>
+          <div>${escapeHtml(item.generated_answer || '')}</div>
         </div>
 
         <div style="margin-top: 8px;">
-          <div class="gen-answer-label"><i class="fa-solid fa-quote-left text-blue"></i> Grounding Evidence Contexts (${(item.retrieved_contexts || []).length} passages)</div>
+          <div class="gen-answer-label"><i class="fa-solid fa-quote-left text-blue"></i> Grounding Evidence Contexts (${contexts.length} passages)</div>
           <div class="gen-ctx-tags">${ctxPills}</div>
         </div>
       `;
@@ -1807,7 +2015,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function selectInspectorDoc(filename, pageNumber = 1) {
     if (!filename) return;
     state.selectedDoc = filename;
-    
+
     // Update badge / toolbar title
     const docTitle = document.getElementById("inspectorDocTitle");
     if (docTitle) docTitle.textContent = filename;
@@ -1855,7 +2063,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderDocumentChunks(filename, chunks) {
     if (!viewerTextContent) return;
-    
+
     let chunksHtml = "";
     if (chunks.length === 0) {
       chunksHtml = `<div class="empty-inspector-prompt"><p>No indexed chunks found for this manuscript.</p></div>`;
@@ -1914,102 +2122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // --- KNOWLEDGE GRAPH VIEW ---
-  async function fetchGraphData() {
-    try {
-      const res = await fetch("/api/graph");
-      const data = await res.json();
-      state.graphData = data;
-    } catch (e) {
-      console.warn("Graph fetch error:", e);
-    }
-  }
 
-  function renderKnowledgeGraph(graph) {
-    const svg = document.getElementById("knowledgeGraphSvg");
-    if (!svg || !graph) return;
-    svg.innerHTML = "";
-
-    const width = svg.clientWidth || 800;
-    const height = 550;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    const groupColors = {
-      "RAG": "#2563eb",
-      "Retrieval": "#0284c7",
-      "Architecture": "#10b981",
-      "Foundation LLMs": "#ec4899",
-      "Evaluation": "#f59e0b",
-      "Biomedical": "#8b5cf6"
-    };
-
-    // Calculate circular positions
-    const angleStep = (2 * Math.PI) / graph.nodes.length;
-    const radius = Math.min(width, height) * 0.38;
-    const nodeCoords = {};
-
-    graph.nodes.forEach((node, i) => {
-      const angle = i * angleStep;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      nodeCoords[node.id] = { x, y, ...node };
-    });
-
-    // Draw Edges
-    const edgesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    graph.edges.forEach(e => {
-      const s = nodeCoords[e.source];
-      const t = nodeCoords[e.target];
-      if (s && t) {
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", s.x);
-        line.setAttribute("y1", s.y);
-        line.setAttribute("x2", t.x);
-        line.setAttribute("y2", t.y);
-        line.setAttribute("stroke", "#cbd5e1");
-        line.setAttribute("stroke-width", "1.5");
-        line.setAttribute("stroke-dasharray", "3,3");
-        edgesGroup.appendChild(line);
-      }
-    });
-    svg.appendChild(edgesGroup);
-
-    // Draw Nodes
-    const nodesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    Object.values(nodeCoords).forEach(n => {
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.style.cursor = "pointer";
-
-      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      circle.setAttribute("cx", n.x);
-      circle.setAttribute("cy", n.y);
-      circle.setAttribute("r", "10");
-      circle.setAttribute("fill", groupColors[n.group] || "#64748b");
-      circle.setAttribute("stroke", "#ffffff");
-      circle.setAttribute("stroke-width", "2");
-
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      text.setAttribute("x", n.x);
-      text.setAttribute("y", n.y + 20);
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("font-size", "10px");
-      text.setAttribute("font-family", "Inter, sans-serif");
-      text.setAttribute("fill", "#0f172a");
-      text.textContent = n.label.split(" (")[0];
-
-      g.appendChild(circle);
-      g.appendChild(text);
-
-      g.addEventListener("click", () => {
-        switchView("inspector");
-        selectInspectorDoc(n.file);
-      });
-
-      nodesGroup.appendChild(g);
-    });
-    svg.appendChild(nodesGroup);
-  }
 
   // --- MANUSCRIPT DELETION, CLEAR ARCHIVE & UPLOAD HANDLERS ---
   let pendingDeleteFilename = null;
@@ -2069,7 +2182,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!res.ok) throw new Error("Failed to clear manuscripts");
           showAlert("All manuscripts cleared and vector index reset.", "success");
         }
-        
+
         state.selectedDoc = null;
         await fetchDocuments();
         await fetchSystemStatus();

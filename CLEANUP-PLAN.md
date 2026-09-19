@@ -1,7 +1,7 @@
 # Project Cleanup Plan (Dry Run)
 
 **Project:** LocalRAG  
-**Technology Stack:** Python 3.11, Streamlit, FAISS, BM25, Sentence-Transformers, Cross-Encoder, Ollama  
+**Technology Stack:** Python 3.11, FastAPI, HTML5/Vanilla JS, FAISS, BM25, Sentence-Transformers, Cross-Encoder, Ollama  
 **Date:** 2026-09-16  
 
 ---

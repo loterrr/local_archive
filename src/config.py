@@ -1,13 +1,18 @@
 from dataclasses import dataclass
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT_DIR / ".env")
 
 def env_bool(key, default):
     return os.getenv(key, str(default)).lower() in {"1","true","yes","on"}
 
-@dataclass(frozen=True)
+@dataclass
 class Settings:
     llm_base_url: str = os.getenv("LOCALRAG_LLM_BASE_URL", "http://127.0.0.1:11434")
-    llm_model: str = os.getenv("LOCALRAG_LLM_MODEL", "qwen2.5-3b-instruct-q4_k_m.gguf")
+    llm_model: str = os.getenv("LOCALRAG_LLM_MODEL", "qwen2.5:3b")
     embedding_model: str = os.getenv("LOCALRAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     chunk_size: int = int(os.getenv("LOCALRAG_CHUNK_SIZE", "450"))
     chunk_overlap: int = int(os.getenv("LOCALRAG_CHUNK_OVERLAP", "80"))

@@ -11,7 +11,10 @@ def test_chunk_overlap():
 
 def test_repo_files():
     root = Path(__file__).resolve().parents[1]
-    assert (root / "app" / "streamlit_app.py").exists()
+    assert (root / "app" / "server.py").exists()
+    assert (root / "app" / "static" / "index.html").exists()
+    assert (root / "app" / "static" / "app.js").exists()
+    assert (root / "app" / "static" / "style.css").exists()
 
 
 from src.evaluation import recall_at_k, reciprocal_rank_at_k, evaluate_rankings
@@ -43,3 +46,17 @@ def test_reranker_effect_recovery():
     qs=[type("Q",(),{"query_id":"q1","query":"x","relevant_chunk_ids":("z",)})()]
     out=compare_rankings({"q1":["a","b"]},{"q1":["z","a"]},qs,5)
     assert out["recovered_queries"] == 1
+
+
+def test_generate_synthetic_corpus_queries():
+    from src.ragas_eval import generate_synthetic_corpus_queries
+    sample_chunks = [
+        {"chunk_id": "c1", "filename": "docA.pdf", "page_number": 1, "text": "This paper proposes a novel transformer architecture for sparse retrieval that reduces latency by 50 percent."},
+        {"chunk_id": "c2", "filename": "docB.pdf", "page_number": 2, "text": "Experiments on benchmark datasets demonstrate that our reranker model achieves higher accuracy than standard BM25."},
+    ]
+    queries = generate_synthetic_corpus_queries(sample_chunks, num_queries=2, llm_instance=None)
+    assert len(queries) == 2
+    assert any(q["filename"] == "docA.pdf" for q in queries)
+    assert any(q["filename"] == "docB.pdf" for q in queries)
+    assert all("query" in q and len(q["query"]) > 10 for q in queries)
+
