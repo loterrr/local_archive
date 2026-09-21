@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nexus: The Archive — Local RAG & Empirical Benchmark</title>
-  <!-- Google Fonts: Inter and Newsreader / Playfair -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Local Offline Typography (System Native Fallback: Segoe UI, -apple-system, Roboto) -->
+
   <!-- Chart.js and Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <!-- Mozilla PDF.js Offline Engine -->
   <script src="/static/vendor/pdf.min.js"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="/static/style.css?v=2.1" />
+  <link rel="stylesheet" href="/static/style.css?v=2.4" />
 </head>
+
 
 <body>
 
   <div class="app-layout">
-    
+
     <!-- LEFT SIDEBAR: Archival Index -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -67,7 +67,7 @@
 
     <!-- MAIN WORKSPACE -->
     <main class="main-content">
-      
+
       <!-- TOP NAVIGATION BAR -->
       <header class="topbar">
         <div class="topbar-left">
@@ -112,53 +112,84 @@
 
       <!-- VIEW CONTAINER -->
       <div class="views-wrapper">
-        
+
         <!-- ========================================================= -->
         <!-- VIEW 1: JOURNAL (CONVERSATIONAL LITERATURE Q&A) -->
         <!-- ========================================================= -->
         <section class="view-panel active" id="viewJournal">
           <div class="chat-container">
-            
+
             <div class="chat-messages" id="chatMessages">
               <!-- Welcome Suggestion Card -->
               <div class="welcome-card" id="welcomeCard">
                 <div class="welcome-badge">ACADEMIC RESEARCH WORKSPACE</div>
                 <h2 class="welcome-title">Synthesize Literature & Verify Findings</h2>
-                <p class="welcome-desc">Query indexed peer-reviewed manuscripts with verifiable source citations, late interaction disambiguation, and hallucination suppression.</p>
-                
+                <p class="welcome-desc">Query indexed peer-reviewed manuscripts with verifiable source citations, late
+                  interaction disambiguation, and hallucination suppression.</p>
+
                 <div class="quick-prompts-label">RECOMMENDED INVESTIGATIONS:</div>
                 <div class="quick-prompts-grid">
                   <button class="prompt-chip" data-query="Compare architectural trade-offs across indexed manuscripts">
                     <i class="fa-solid fa-layer-group"></i> Compare architectural trade-offs across indexed manuscripts
                   </button>
-                  <button class="prompt-chip" data-query="How does FlashAttention compute exact attention without materializing N-by-N matrices in HBM?">
+                  <button class="prompt-chip"
+                    data-query="How does FlashAttention compute exact attention without materializing N-by-N matrices in HBM?">
                     <i class="fa-solid fa-bolt"></i> How does FlashAttention compute exact attention in SRAM?
                   </button>
-                  <button class="prompt-chip" data-query="What reflection tokens are used in Self-RAG to critique retrieved passages?">
+                  <button class="prompt-chip"
+                    data-query="What reflection tokens are used in Self-RAG to critique retrieved passages?">
                     <i class="fa-solid fa-shield-halved"></i> What reflection tokens are used in Self-RAG?
                   </button>
-                  <button class="prompt-chip" data-query="Why does PubMedBERT advocate pretraining from scratch over continuous domain adaptation?">
+                  <button class="prompt-chip"
+                    data-query="Why does PubMedBERT advocate pretraining from scratch over continuous domain adaptation?">
                     <i class="fa-solid fa-dna"></i> PubMedBERT from-scratch pretraining vs BioBERT
                   </button>
                 </div>
               </div>
             </div>
 
-            <!-- CHAT INPUT BAR (Matches Screenshot 2) -->
-            <div class="chat-input-wrapper">
-              <form class="chat-input-form" id="chatForm">
-                <div class="input-prefix-icon"><i class="fa-regular fa-comment-dots"></i></div>
-                <input 
-                  type="text" 
-                  id="queryInput" 
-                  class="chat-input" 
-                  placeholder="Query the literature, verify claims, or extract findings..." 
-                  autocomplete="off"
-                />
-                <button type="submit" class="btn-send" id="btnSend">
-                  <i class="fa-solid fa-paper-plane"></i>
-                </button>
-              </form>
+            <!-- CHAT INPUT AREA -->
+            <div class="chat-input-area">
+              <!-- Interactive Dual-Reranker Toggle Bar -->
+              <div class="chat-reranker-toggle-bar" id="chatRerankerToggleBar">
+                <div class="reranker-toggle-left">
+                  <span class="reranker-toggle-label">
+                    <i class="fa-solid fa-sliders text-blue"></i>
+                    <span>Reranker:</span>
+                  </span>
+                  <div class="reranker-segmented-group" role="group" aria-label="Reranker Selection">
+                    <button type="button" class="reranker-pill active" id="btnRerankerL2"
+                      data-model="cross-encoder/ms-marco-MiniLM-L-2-v2"
+                      title="2-Layer student cross-encoder, ideal for real-time chat">
+                      <i class="fa-solid fa-bolt-lightning text-yellow"></i>
+                      <span class="pill-title">L-2 Fast</span>
+                      <span class="pill-meta">2-Layer · ~290ms</span>
+                    </button>
+                    <button type="button" class="reranker-pill" id="btnRerankerL6"
+                      data-model="cross-encoder/ms-marco-MiniLM-L-6-v2"
+                      title="6-Layer deep cross-encoder, deeper bidirectional cross-attention">
+                      <i class="fa-solid fa-microscope text-cyan"></i>
+                      <span class="pill-title">L-6 Deep</span>
+                      <span class="pill-meta">6-Layer · +10% Recall</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="reranker-toggle-right">
+                  <span class="reranker-badge-hint"><i class="fa-solid fa-microchip"></i> CPU Cross-Attention</span>
+                </div>
+              </div>
+
+              <!-- Chat Input Capsule -->
+              <div class="chat-input-wrapper">
+                <form class="chat-input-form" id="chatForm">
+                  <div class="input-prefix-icon"><i class="fa-regular fa-comment-dots"></i></div>
+                  <input type="text" id="queryInput" class="chat-input"
+                    placeholder="Query the literature, verify claims, or extract findings..." autocomplete="off" />
+                  <button type="submit" class="btn-send" id="btnSend" title="Send Query">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </button>
+                </form>
+              </div>
             </div>
 
           </div>
@@ -169,7 +200,7 @@
         <!-- ========================================================= -->
         <section class="view-panel" id="viewBenchmark">
           <div class="benchmark-container">
-            
+
             <!-- Benchmark Sub-Header (Matches Screenshot 1) -->
             <div class="benchmark-header">
               <div class="bench-header-left">
@@ -177,12 +208,14 @@
                   <i class="fa-solid fa-arrow-left"></i>
                 </button>
                 <div>
-                  <h2 class="bench-main-title">The Archive <span class="bench-sub-title">Empirical Benchmark Suite</span></h2>
+                  <h2 class="bench-main-title">The Archive <span class="bench-sub-title">Empirical Benchmark
+                      Suite</span></h2>
                   <p class="bench-tagline">Decoupled Upstream Funnel & Cross Encoder Quality Metrics</p>
                 </div>
               </div>
               <div class="bench-header-badges">
-                <span class="pill-badge"><i class="fa-solid fa-database"></i> <span id="benchManuscriptsCount">15 manuscripts</span></span>
+                <span class="pill-badge"><i class="fa-solid fa-database"></i> <span id="benchManuscriptsCount">15
+                    manuscripts</span></span>
                 <button class="pill-badge pill-action" id="btnReindexHeader">
                   <i class="fa-solid fa-rotate"></i> <span>Re-index (450-char chunks)</span>
                 </button>
@@ -201,9 +234,11 @@
               </div>
 
               <div class="corpus-mode-switcher">
-                <button class="corpus-btn active" id="btnModeActiveCorpus" title="Benchmark across all active indexed manuscripts">
+                <button class="corpus-btn active" id="btnModeActiveCorpus"
+                  title="Benchmark across all active indexed manuscripts">
                   <span class="dot-green"></span>
-                  <span id="corpusActiveLabel">Active Ingested Corpus (<span id="activeDocCountBadge">5</span> files)</span>
+                  <span id="corpusActiveLabel">Active Ingested Corpus (<span id="activeDocCountBadge">5</span>
+                    files)</span>
                 </button>
                 <button class="corpus-btn" id="btnModeBaseline" title="View historical 20-manuscript thesis baseline">
                   <i class="fa-solid fa-clock-rotate-left"></i>
@@ -215,240 +250,293 @@
             <!-- ================= SUB-TAB 1: RETRIEVAL PANE ================= -->
             <div class="benchmark-subtab-pane active" id="paneRetrieval">
 
-            <!-- Benchmark Configuration Card (Matches Screenshot 1) -->
-            <div class="card-config">
-              <div class="card-config-header">
-                <i class="fa-solid fa-bolt-lightning text-blue"></i>
-                <span class="config-title">Benchmark Configuration</span>
+              <!-- Benchmark Configuration Card (Matches Screenshot 1) -->
+              <div class="card-config">
+                <div class="card-config-header">
+                  <i class="fa-solid fa-bolt-lightning text-blue"></i>
+                  <span class="config-title">Benchmark Configuration</span>
+                </div>
+
+                <div class="config-grid">
+                  <div class="config-field">
+                    <label>Upstream Candidate Pool (k_fetch)</label>
+                    <select id="benchCandidateK" class="custom-select">
+                      <option value="50" selected>k_fetch = 50 (Standard Funnel)</option>
+                      <option value="20">k_fetch = 20 (Balanced Sweet Spot)</option>
+                      <option value="10">k_fetch = 10 (Fast CPU Path)</option>
+                      <option value="30">k_fetch = 30 (Deep Retrieval)</option>
+                    </select>
+                  </div>
+
+                  <div class="config-field">
+                    <label>Evaluation Depth (k_eval)</label>
+                    <select id="benchEvalK" class="custom-select">
+                      <option value="5" selected>Top 5 Output</option>
+                      <option value="10">Top 10 Output</option>
+                      <option value="20">Top 20 Output</option>
+                    </select>
+                  </div>
+
+                  <div class="config-field" id="benchSampleSizeField">
+                    <label>Sample Size (Speed vs Depth)</label>
+                    <select id="benchSampleSize" class="custom-select">
+                      <option value="10" selected>10 Queries (Quick Audit — ~25s)</option>
+                      <option value="25">25 Queries (Balanced — ~50s)</option>
+                      <option value="50">50 Queries (Comprehensive)</option>
+                    </select>
+                  </div>
+
+
+                  <div class="config-field">
+                    <label>Pipeline Mode</label>
+                    <select id="benchPipelineMode" class="custom-select">
+                      <option value="enhanced" selected>Enhanced (+ Cross-Encoder Rerank)</option>
+                      <option value="hybrid">Baseline (Hybrid BM25 + Dense FAISS)</option>
+                    </select>
+                  </div>
+
+                  <div class="config-checkboxes">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="cbDynamicRerank" checked />
+                      <span>Dynamic Reranking <small class="text-muted">(fast-path)</small></span>
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="cbGenerationMetrics" checked />
+                      <span>Generation Metrics</span>
+                    </label>
+                  </div>
+
+                  <div class="config-btn-wrap">
+                    <button class="btn-run-benchmark" id="btnRunBenchmark">
+                      <i class="fa-solid fa-play"></i>
+                      <span>Run Benchmark</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Re-index / Notification Alert Banner (Matches Screenshot 1) -->
+                <div class="bench-alert" id="benchAlert" style="display: none;">
+                  <div class="alert-content-left">
+                    <i class="fa-solid fa-circle-exclamation alert-icon" id="benchAlertIcon"></i>
+                    <span id="benchAlertText">Re-indexing notification</span>
+                  </div>
+                  <button class="alert-close" id="btnCloseAlert">&times;</button>
+                </div>
               </div>
 
-              <div class="config-grid">
-                <div class="config-field">
-                  <label>Upstream Candidate Pool (k_fetch)</label>
-                  <select id="benchCandidateK" class="custom-select">
-                    <option value="50" selected>k_fetch = 50 (Standard Funnel)</option>
-                    <option value="20">k_fetch = 20 (Balanced Sweet Spot)</option>
-                    <option value="10">k_fetch = 10 (Fast CPU Path)</option>
-                    <option value="30">k_fetch = 30 (Deep Retrieval)</option>
-                  </select>
+              <!-- EMPTY STATE (Matches Screenshot 1) -->
+              <div class="bench-empty-state" id="benchEmptyState">
+                <div class="empty-chart-icon">
+                  <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <h3 class="empty-state-title">No evaluation results yet</h3>
+                <p class="empty-state-sub">Click "Run Benchmark" to evaluate retrieval & reranking accuracy</p>
+              </div>
+
+              <!-- LOADING PROGRESS STATE -->
+              <div class="bench-loading-state" id="benchLoadingState" style="display: none;">
+                <div class="loading-spinner-wrap">
+                  <i class="fa-solid fa-circle-notch fa-spin"></i>
+                </div>
+                <h3 id="loadingStateTitle">Evaluating 50 Research Queries across 20 Manuscripts...</h3>
+                <p class="text-muted" id="loadingStateSubtitle">Computing FAISS Dense + BM25 Hybrid Reciprocal Ranks &
+                  2-Layer Cross-Encoder Disambiguation...</p>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill" id="benchmarkProgressBar"></div>
+                </div>
+              </div>
+
+              <!-- POPULATED RESULTS SECTION -->
+              <div class="benchmark-results" id="benchmarkResultsArea" style="display: none;">
+
+                <!-- Key Metrics Grid -->
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-label" id="labelRecallK">RECALL@5 (DEEP RESEARCH)</div>
+                    <div class="metric-value text-blue" id="valRecallK">54.0%</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeRecallGain">+8.0%</span> vs Hybrid
+                      Baseline</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label" id="labelMrrK">MRR@5 (RECIPROCAL RANK)</div>
+                    <div class="metric-value text-green" id="valMrrK">0.4020</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeMrrGain">+9.4%</span> vs Hybrid
+                      Baseline</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">RAGAS FAITHFULNESS (GROUNDING)</div>
+                    <div class="metric-value text-indigo" id="valFaithfulness">0.932</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeFaithGain">+24.6%</span> Hallucination
+                      Suppression</div>
+                  </div>
+
+                  <div class="metric-card">
+                    <div class="metric-label">CPU LATENCY (2-LAYER L-2)</div>
+                    <div class="metric-value text-amber" id="valLatency">290 ms</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeLatencySpeedup">9.9x Faster</span> vs
+                      6-Layer</div>
+                  </div>
                 </div>
 
-                <div class="config-field">
-                  <label>Evaluation Depth (k_eval)</label>
-                  <select id="benchEvalK" class="custom-select">
-                    <option value="5" selected>Top 5 Output</option>
-                    <option value="10">Top 10 Output</option>
-                    <option value="20">Top 20 Output</option>
-                  </select>
-                </div>
-
-                <div class="config-field">
-                  <label>Pipeline Mode</label>
-                  <select id="benchPipelineMode" class="custom-select">
-                    <option value="enhanced" selected>Enhanced (+ Cross-Encoder Rerank)</option>
-                    <option value="hybrid">Baseline (Hybrid BM25 + Dense FAISS)</option>
-                  </select>
-                </div>
-
-                <div class="config-checkboxes">
-                  <label class="checkbox-label">
-                    <input type="checkbox" id="cbDynamicRerank" checked />
-                    <span>Dynamic Reranking <small class="text-muted">(fast-path)</small></span>
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" id="cbGenerationMetrics" checked />
-                    <span>Generation Metrics</span>
-                  </label>
-                </div>
-
-                <div class="config-btn-wrap">
-                  <button class="btn-run-benchmark" id="btnRunBenchmark">
-                    <i class="fa-solid fa-play"></i>
-                    <span>Run Benchmark</span>
+                <!-- Statistical Significance Banner -->
+                <div class="significance-banner" id="bannerSignificance">
+                  <div class="sig-icon" id="sigIcon"><i class="fa-solid fa-chart-line"></i></div>
+                  <div class="sig-content" id="sigContent">
+                    <strong>Statistical Significance:</strong> <span id="textSigSummary">Benchmark pending execution.
+                      Run benchmark above to compute paired Student's t-test and p-value live.</span>
+                  </div>
+                  <button class="btn-excel-pill" id="btnExportExcelBench">
+                    <i class="fa-solid fa-file-excel"></i> Download Excel Report (.xlsx)
                   </button>
                 </div>
-              </div>
 
-              <!-- Re-index / Notification Alert Banner (Matches Screenshot 1) -->
-              <div class="bench-alert" id="benchAlert" style="display: none;">
-                <div class="alert-content-left">
-                  <i class="fa-solid fa-circle-exclamation alert-icon" id="benchAlertIcon"></i>
-                  <span id="benchAlertText">Re-indexing notification</span>
-                </div>
-                <button class="alert-close" id="btnCloseAlert">&times;</button>
-              </div>
-            </div>
-
-            <!-- EMPTY STATE (Matches Screenshot 1) -->
-            <div class="bench-empty-state" id="benchEmptyState">
-              <div class="empty-chart-icon">
-                <i class="fa-solid fa-chart-simple"></i>
-              </div>
-              <h3 class="empty-state-title">No evaluation results yet</h3>
-              <p class="empty-state-sub">Click "Run Benchmark" to evaluate retrieval & reranking accuracy</p>
-            </div>
-
-            <!-- LOADING PROGRESS STATE -->
-            <div class="bench-loading-state" id="benchLoadingState" style="display: none;">
-              <div class="loading-spinner-wrap">
-                <i class="fa-solid fa-circle-notch fa-spin"></i>
-              </div>
-              <h3 id="loadingStateTitle">Evaluating 50 Research Queries across 20 Manuscripts...</h3>
-              <p class="text-muted" id="loadingStateSubtitle">Computing FAISS Dense + BM25 Hybrid Reciprocal Ranks & 2-Layer Cross-Encoder Disambiguation...</p>
-              <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="benchmarkProgressBar"></div>
-              </div>
-            </div>
-
-            <!-- POPULATED RESULTS SECTION -->
-            <div class="benchmark-results" id="benchmarkResultsArea" style="display: none;">
-              
-              <!-- Key Metrics Grid -->
-              <div class="metrics-grid">
-                <div class="metric-card">
-                  <div class="metric-label" id="labelRecallK">RECALL@5 (DEEP RESEARCH)</div>
-                  <div class="metric-value text-blue" id="valRecallK">54.0%</div>
-                  <div class="metric-subtext"><span class="badge-gain" id="badgeRecallGain">+8.0%</span> vs Hybrid Baseline</div>
-                </div>
-
-                <div class="metric-card">
-                  <div class="metric-label" id="labelMrrK">MRR@5 (RECIPROCAL RANK)</div>
-                  <div class="metric-value text-green" id="valMrrK">0.4020</div>
-                  <div class="metric-subtext"><span class="badge-gain" id="badgeMrrGain">+9.4%</span> vs Hybrid Baseline</div>
-                </div>
-
-                <div class="metric-card">
-                  <div class="metric-label">RAGAS FAITHFULNESS (GROUNDING)</div>
-                  <div class="metric-value text-indigo" id="valFaithfulness">0.932</div>
-                  <div class="metric-subtext"><span class="badge-gain" id="badgeFaithGain">+24.6%</span> Hallucination Suppression</div>
-                </div>
-
-                <div class="metric-card">
-                  <div class="metric-label">CPU LATENCY (2-LAYER L-2)</div>
-                  <div class="metric-value text-amber" id="valLatency">290 ms</div>
-                  <div class="metric-subtext"><span class="badge-gain" id="badgeLatencySpeedup">9.9x Faster</span> vs 6-Layer</div>
-                </div>
-              </div>
-
-              <!-- Statistical Significance Banner -->
-              <div class="significance-banner">
-                <div class="sig-icon"><i class="fa-solid fa-certificate"></i></div>
-                <div class="sig-content">
-                  <strong>Statistical Significance Verified:</strong> Paired Student's t-test on query-by-query Reciprocal Ranks yielded <span class="math-p" id="textPValue">p = 0.0412 &lt; 0.05</span> (Statistically significant at 95% Confidence Interval across 50 benchmark queries).
-                </div>
-                <button class="btn-excel-pill" id="btnExportExcelBench">
-                  <i class="fa-solid fa-file-excel"></i> Download Excel Report (.xlsx)
-                </button>
-              </div>
-
-              <!-- Charts Grid -->
-              <div class="charts-grid">
-                <div class="chart-card">
+                <!-- 3-Way Comparative Pareto Scorecard (Baseline vs Shallow L-2 vs Deep L-6) -->
+                <div class="card-table scorecard-3way-card" id="scorecard3Way">
                   <div class="chart-header">
-                    <h3>Multi-K Retrieval Recall & Precision Trajectory</h3>
+                    <div class="scorecard-title-wrap">
+                      <i class="fa-solid fa-scale-balanced text-blue"></i>
+                      <div>
+                        <h3>3-Way Comparative Benchmark Scorecard</h3>
+                        <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Side-by-side empirical Pareto
+                          evaluation: Hybrid Baseline vs. Shallow L-2 vs. Deep L-6</p>
+                      </div>
+                    </div>
+                    <span class="pill-badge-blue"><i class="fa-solid fa-vial"></i> Dual Reranker Evaluation</span>
                   </div>
-                  <div id="plotMultiK" class="chart-plot"></div>
+                  <div class="table-responsive">
+                    <table class="bench-table scorecard-table">
+                      <thead>
+                        <tr>
+                          <th>Pipeline Tier</th>
+                          <th>Architecture</th>
+                          <th style="text-align: center;">Recall@5</th>
+                          <th style="text-align: center;">Recall Gain</th>
+                          <th style="text-align: center;">MRR@5</th>
+                          <th style="text-align: center;">MRR Gain</th>
+                          <th style="text-align: center;">Avg Latency</th>
+                          <th style="text-align: center;">Significance (p &lt; 0.05)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="scorecard3WayBody">
+                        <!-- Injected via JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
-                <div class="chart-card">
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                  <div class="chart-card">
+                    <div class="chart-header">
+                      <h3>Multi-K Retrieval Recall & Precision Trajectory</h3>
+                    </div>
+                    <div id="plotMultiK" class="chart-plot"></div>
+                  </div>
+
+                  <div class="chart-card">
+                    <div class="chart-header">
+                      <h3>Candidate Sweep CPU Latency Scaling (K = 5 to 50)</h3>
+                    </div>
+                    <div id="plotLatencySweep" class="chart-plot"></div>
+                  </div>
+                </div>
+
+                <!-- Category Disambiguation Breakdown -->
+                <div class="card-table">
                   <div class="chart-header">
-                    <h3>Candidate Sweep CPU Latency Scaling (K = 5 to 50)</h3>
+                    <h3>Adversarial Disambiguation by Category (50 Queries)</h3>
                   </div>
-                  <div id="plotLatencySweep" class="chart-plot"></div>
-                </div>
-              </div>
-
-              <!-- Category Disambiguation Breakdown -->
-              <div class="card-table">
-                <div class="chart-header">
-                  <h3>Adversarial Disambiguation by Category (50 Queries)</h3>
-                </div>
-                <div class="table-responsive">
-                  <table class="bench-table" id="categoryTable">
-                    <thead>
-                      <tr>
-                        <th>Query Category</th>
-                        <th>Query Count</th>
-                        <th>Standard Hybrid Recall@10</th>
-                        <th>Cross-Encoder Recall@10</th>
-                        <th>Absolute Gain</th>
-                        <th>Disambiguation Status</th>
-                      </tr>
-                    </thead>
-                    <tbody id="categoryTableBody">
-                      <tr>
-                        <td><strong>Hard Distractor Traps</strong></td>
-                        <td>20 queries</td>
-                        <td>60.0%</td>
-                        <td><strong>70.0%</strong></td>
-                        <td><span class="badge-gain">+10.0%</span></td>
-                        <td><span class="status-pill status-success">Eliminates cross-paper keyword traps</span></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Empirical Scientific Facts</strong></td>
-                        <td>20 queries</td>
-                        <td>65.0%</td>
-                        <td><strong>80.0%</strong></td>
-                        <td><span class="badge-gain">+15.0%</span></td>
-                        <td><span class="status-pill status-success">Elevates exact hyperparameters to Rank 1</span></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Multi-Hop Synthesis</strong></td>
-                        <td>10 queries</td>
-                        <td>70.0%</td>
-                        <td><strong>75.0%</strong></td>
-                        <td><span class="badge-gain">+5.0%</span></td>
-                        <td><span class="status-pill status-neutral">Consistent top evidence retrieval</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- DETAILED 50-QUERY GROUNDING INSPECTOR -->
-              <div class="card-table" style="margin-top: 24px;">
-                <div class="chart-header" style="display: flex; align-items: center; justify-content: space-between;">
-                  <div>
-                    <h3>Interactive Query-by-Query Grounding Verifier (50 Verified Queries)</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect individual query disambiguation, target paper ground truth, and rank movements.</p>
-                  </div>
-                  <div style="display: flex; gap: 8px;">
-                    <select id="filterCategory" class="custom-select-sm">
-                      <option value="all">All Categories (50)</option>
-                      <option value="Hard Distractor">Hard Distractors (20)</option>
-                      <option value="Empirical">Empirical Facts (20)</option>
-                      <option value="Multi-Hop">Multi-Hop (10)</option>
-                    </select>
-                    <input type="text" id="filterQueryText" class="custom-select-sm" placeholder="Search query text..." style="width: 180px;" />
+                  <div class="table-responsive">
+                    <table class="bench-table" id="categoryTable">
+                      <thead>
+                        <tr>
+                          <th>Query Category</th>
+                          <th>Query Count</th>
+                          <th>Standard Hybrid Recall@10</th>
+                          <th>Cross-Encoder Recall@10</th>
+                          <th>Absolute Gain</th>
+                          <th>Disambiguation Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="categoryTableBody">
+                        <tr>
+                          <td><strong>Hard Distractor Traps</strong></td>
+                          <td>20 queries</td>
+                          <td>60.0%</td>
+                          <td><strong>70.0%</strong></td>
+                          <td><span class="badge-gain">+10.0%</span></td>
+                          <td><span class="status-pill status-success">Eliminates cross-paper keyword traps</span></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Empirical Scientific Facts</strong></td>
+                          <td>20 queries</td>
+                          <td>65.0%</td>
+                          <td><strong>80.0%</strong></td>
+                          <td><span class="badge-gain">+15.0%</span></td>
+                          <td><span class="status-pill status-success">Elevates exact hyperparameters to Rank 1</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><strong>Multi-Hop Synthesis</strong></td>
+                          <td>10 queries</td>
+                          <td>70.0%</td>
+                          <td><strong>75.0%</strong></td>
+                          <td><span class="badge-gain">+5.0%</span></td>
+                          <td><span class="status-pill status-neutral">Consistent top evidence retrieval</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-                <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
-                  <table class="bench-table">
-                    <thead>
-                      <tr>
-                        <th style="width: 60px;">ID</th>
-                        <th style="width: 130px;">Category</th>
-                        <th>Benchmark Query</th>
-                        <th style="width: 160px;">Ground Truth Paper</th>
-                        <th style="width: 80px; text-align: center;">Hybrid</th>
-                        <th style="width: 80px; text-align: center;">Rerank</th>
-                        <th style="width: 140px;">Disambiguation</th>
-                      </tr>
-                    </thead>
-                    <tbody id="queryDetailsTableBody">
-                      <!-- Injected via JavaScript -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
 
-            </div>
+                <!-- DETAILED 50-QUERY GROUNDING INSPECTOR -->
+                <div class="card-table" style="margin-top: 24px;">
+                  <div class="chart-header" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <h3>Interactive Query-by-Query Grounding Verifier (50 Verified Queries)</h3>
+                      <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect individual query
+                        disambiguation, target paper ground truth, and rank movements.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                      <select id="filterCategory" class="custom-select-sm">
+                        <option value="all">All Categories (50)</option>
+                        <option value="Hard Distractor">Hard Distractors (20)</option>
+                        <option value="Empirical">Empirical Facts (20)</option>
+                        <option value="Multi-Hop">Multi-Hop (10)</option>
+                      </select>
+                      <input type="text" id="filterQueryText" class="custom-select-sm"
+                        placeholder="Search query text..." style="width: 180px;" />
+                    </div>
+                  </div>
+                  <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+                    <table class="bench-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 60px;">ID</th>
+                          <th style="width: 130px;">Category</th>
+                          <th>Benchmark Query</th>
+                          <th style="width: 160px;">Ground Truth Paper</th>
+                          <th style="width: 80px; text-align: center;">Hybrid</th>
+                          <th style="width: 80px; text-align: center;">Rerank</th>
+                          <th style="width: 140px;">Disambiguation</th>
+                        </tr>
+                      </thead>
+                      <tbody id="queryDetailsTableBody">
+                        <!-- Injected via JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
             </div>
             <!-- END SUB-TAB 1: RETRIEVAL PANE -->
 
             <!-- ================= SUB-TAB 2: GENERATION PANE ================= -->
             <div class="benchmark-subtab-pane" id="paneGeneration" style="display: none;">
-              
+
               <!-- Generation Configuration Card -->
               <div class="card-config">
                 <div class="card-config-header">
@@ -497,7 +585,8 @@
                   <i class="fa-solid fa-microchip"></i>
                 </div>
                 <h3 class="empty-state-title">No generation evaluation runs yet</h3>
-                <p class="empty-state-sub">Click "Run Generation Benchmark" to evaluate RAGAS Faithfulness, Answer Relevancy, Citation Precision, and ROUGE-L</p>
+                <p class="empty-state-sub">Click "Run Generation Benchmark" to evaluate RAGAS Faithfulness, Answer
+                  Relevancy, Citation Precision, and ROUGE-L</p>
               </div>
 
               <!-- GENERATION LOADING STATE -->
@@ -506,7 +595,8 @@
                   <i class="fa-solid fa-brain fa-spin text-indigo"></i>
                 </div>
                 <h3 id="genLoadingTitle">Evaluating Generation Grounding & Citations...</h3>
-                <p class="text-muted" id="genLoadingSubtitle">Running RAGAS Faithfulness verification and citation passage attribution on local Ollama...</p>
+                <p class="text-muted" id="genLoadingSubtitle">Running RAGAS Faithfulness verification and citation
+                  passage attribution on local Ollama...</p>
                 <div class="progress-bar-container">
                   <div class="progress-bar-fill progress-bar-indigo" id="genProgressBar" style="width: 25%;"></div>
                 </div>
@@ -514,13 +604,14 @@
 
               <!-- GENERATION RESULTS AREA -->
               <div class="benchmark-results" id="genResultsArea" style="display: none;">
-                
+
                 <!-- Metrics Grid -->
                 <div class="metrics-grid">
                   <div class="metric-card">
                     <div class="metric-label">RAGAS FAITHFULNESS (GROUNDING)</div>
                     <div class="metric-value text-indigo" id="valGenFaithfulness">0.924</div>
-                    <div class="metric-subtext"><span class="badge-gain" id="badgeGenFaith">+23.2%</span> Entailment Grounding</div>
+                    <div class="metric-subtext"><span class="badge-gain" id="badgeGenFaith">+23.2%</span> Entailment
+                      Grounding</div>
                   </div>
 
                   <div class="metric-card">
@@ -576,10 +667,11 @@
                   <div class="chart-header">
                     <div>
                       <h3>Query-by-Query Synthesis & Evidence Grounding Verification</h3>
-                      <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect the question, generated response, cited literature tags, and grounding scores.</p>
+                      <p class="text-muted" style="font-size: 12px; margin-top: 2px;">Inspect the question, generated
+                        response, cited literature tags, and grounding scores.</p>
                     </div>
                   </div>
-                  
+
                   <div class="gen-drilldown-wrap" id="genDrilldownList">
                     <!-- Injected via JavaScript -->
                   </div>
@@ -601,7 +693,8 @@
             <div class="inspector-sidebar">
               <div class="inspector-sidebar-header">
                 <h3 class="inspector-sidebar-title">Indexed Manuscripts (20)</h3>
-                <input type="text" id="inspectorSearchInput" class="custom-select-sm" placeholder="Search papers..." style="width: 100%; margin-top: 6px;" />
+                <input type="text" id="inspectorSearchInput" class="custom-select-sm" placeholder="Search papers..."
+                  style="width: 100%; margin-top: 6px;" />
               </div>
               <div class="inspector-doc-list" id="inspectorDocList">
                 <!-- Injected via JS -->
@@ -616,24 +709,33 @@
                     <span id="inspectorDocTitle">Select a manuscript</span>
                   </div>
                   <div class="page-nav-controls" id="pageNavControls" style="display: none;">
-                    <button class="icon-btn-sm" id="btnPrevPage" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span class="page-indicator">Page <input type="number" id="inputPageNum" value="1" min="1" max="100" class="page-input" /> of <span id="totalDocPages">1</span></span>
-                    <button class="icon-btn-sm" id="btnNextPage" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
-                    
+                    <button class="icon-btn-sm" id="btnPrevPage" title="Previous Page"><i
+                        class="fa-solid fa-chevron-left"></i></button>
+                    <span class="page-indicator">Page <input type="number" id="inputPageNum" value="1" min="1" max="100"
+                        class="page-input" /> of <span id="totalDocPages">1</span></span>
+                    <button class="icon-btn-sm" id="btnNextPage" title="Next Page"><i
+                        class="fa-solid fa-chevron-right"></i></button>
+
                     <div class="zoom-controls">
-                      <button class="icon-btn-sm" id="btnZoomOut" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                      <button class="icon-btn-sm" id="btnZoomOut" title="Zoom Out"><i
+                          class="fa-solid fa-minus"></i></button>
                       <span id="zoomLevelLabel" class="zoom-label">120%</span>
-                      <button class="icon-btn-sm" id="btnZoomIn" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
-                      <button class="icon-btn-sm" id="btnFitWidth" title="Fit Width"><i class="fa-solid fa-arrows-left-right"></i></button>
+                      <button class="icon-btn-sm" id="btnZoomIn" title="Zoom In"><i
+                          class="fa-solid fa-plus"></i></button>
+                      <button class="icon-btn-sm" id="btnFitWidth" title="Fit Width"><i
+                          class="fa-solid fa-arrows-left-right"></i></button>
                     </div>
                   </div>
                 </div>
 
                 <div class="inspector-toolbar-right">
                   <div class="view-toggle-btns">
-                    <button class="toggle-btn active" id="btnViewModePdf"><i class="fa-solid fa-file-pdf"></i> PDF Canvas</button>
-                    <button class="toggle-btn" id="btnViewModeNative"><i class="fa-solid fa-window-maximize"></i> Native View</button>
-                    <button class="toggle-btn" id="btnViewModeText"><i class="fa-solid fa-align-left"></i> Extracted Text</button>
+                    <button class="toggle-btn active" id="btnViewModePdf"><i class="fa-solid fa-file-pdf"></i> PDF
+                      Canvas</button>
+                    <button class="toggle-btn" id="btnViewModeNative"><i class="fa-solid fa-window-maximize"></i> Native
+                      View</button>
+                    <button class="toggle-btn" id="btnViewModeText"><i class="fa-solid fa-align-left"></i> Extracted
+                      Text</button>
                   </div>
                   <a href="#" target="_blank" class="icon-btn" id="btnOpenPdfNewTab" title="Open PDF in New Window">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -646,7 +748,7 @@
 
               <!-- PDF VIEWER CONTAINER -->
               <div class="inspector-viewer" id="inspectorViewerWrap">
-                
+
                 <!-- 1. Embedded PDF.js Canvas Mode -->
                 <div class="pdf-viewer-pane" id="pdfViewerPane">
                   <div class="pdf-canvas-scroll-wrap" id="pdfScrollWrap">
@@ -659,7 +761,8 @@
                 </div>
 
                 <!-- 2. Native Browser PDF Iframe Mode -->
-                <iframe id="inspectorPdfIframe" class="pdf-iframe-embed" style="display: none;" src="about:blank"></iframe>
+                <iframe id="inspectorPdfIframe" class="pdf-iframe-embed" style="display: none;"
+                  src="about:blank"></iframe>
 
                 <!-- 3. Extracted Text & Grounding Chunks Mode -->
                 <div class="text-viewer-pane" id="textViewerPane" style="display: none;">
@@ -679,7 +782,8 @@
                     <div class="empty-inspector-prompt">
                       <i class="fa-regular fa-file-pdf"></i>
                       <h3>PDF Literature Inspector</h3>
-                      <p>Select any manuscript from the left sidebar to render the original PDF document with page-level navigation and grounding highlights.</p>
+                      <p>Select any manuscript from the left sidebar to render the original PDF document with page-level
+                        navigation and grounding highlights.</p>
                     </div>
                   </div>
                 </div>
@@ -713,7 +817,7 @@
           <button class="drawer-close-btn" id="btnDrawerClose">&times;</button>
         </div>
       </div>
-      
+
       <div class="drawer-body" id="drawerBody">
         <!-- 1. Diagnostics Pane -->
         <div class="drawer-pane" id="drawerPaneDiagnostics">
@@ -726,8 +830,10 @@
             <div class="drawer-pdf-toolbar">
               <span id="drawerPdfPageBadge" class="badge badge-model">Page 1</span>
               <div style="display: flex; gap: 4px;">
-                <button class="icon-btn-xs" id="btnDrawerPrevPage" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
-                <button class="icon-btn-xs" id="btnDrawerNextPage" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="icon-btn-xs" id="btnDrawerPrevPage" title="Previous Page"><i
+                    class="fa-solid fa-chevron-left"></i></button>
+                <button class="icon-btn-xs" id="btnDrawerNextPage" title="Next Page"><i
+                    class="fa-solid fa-chevron-right"></i></button>
               </div>
             </div>
             <div class="drawer-canvas-scroll">
@@ -753,7 +859,8 @@
           <h3 id="deleteModalTitle">Delete Manuscript</h3>
         </div>
         <div class="modal-body-content">
-          <p id="deleteModalMessage">Are you sure you want to delete this manuscript from the Archival Index? This will remove its chunks from the vector store.</p>
+          <p id="deleteModalMessage">Are you sure you want to delete this manuscript from the Archival Index? This will
+            remove its chunks from the vector store.</p>
         </div>
         <div class="modal-actions-row">
           <button class="btn-modal-cancel" id="btnCancelDelete">Cancel</button>
@@ -768,6 +875,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/app.js?v=2.1"></script>
+  <script src="/static/app.js?v=2.4"></script>
 </body>
+
 </html>

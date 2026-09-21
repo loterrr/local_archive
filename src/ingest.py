@@ -54,7 +54,7 @@ def is_tesseract_available() -> bool:
     return _HAS_TESSERACT
 
 
-def extract_pdf(path: Path, ocr_threshold: int = 50, ocr_dpi: int = 220) -> list[PageText]:
+def extract_pdf(path: Path, ocr_threshold: int = 0, ocr_dpi: int = 220) -> list[PageText]:
     path = Path(path)
     doc_id = document_id_for(path)
     pages: list[PageText] = []
@@ -82,7 +82,7 @@ def extract_pdf(path: Path, ocr_threshold: int = 50, ocr_dpi: int = 220) -> list
     return pages
 
 
-def extract_pdfs_parallel(paths: list[Path], ocr_threshold: int = 50, ocr_dpi: int = 220, max_workers: int = 4) -> dict[Path, list[PageText]]:
+def extract_pdfs_parallel(paths: list[Path], ocr_threshold: int = 0, ocr_dpi: int = 220, max_workers: int = 4) -> dict[Path, list[PageText]]:
     results = {}
     with ThreadPoolExecutor(max_workers=min(len(paths), max_workers or 4)) as executor:
         futures = {executor.submit(extract_pdf, p, ocr_threshold, ocr_dpi): p for p in paths}

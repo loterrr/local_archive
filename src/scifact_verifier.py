@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import requests
 from sentence_transformers import SentenceTransformer, CrossEncoder
+from .download_models import ensure_model_ready
 
 DATA_DIR = Path("data/beir/scifact")
 CORPUS_PATH = DATA_DIR / "corpus.jsonl"
@@ -39,10 +40,25 @@ class SciFactVerifier:
         print(f"[+] Loaded {len(self.corpus):,} abstracts.")
 
         print(f"[*] Loading dense retriever: {dense_model}...")
-        self.bi_encoder = SentenceTransformer(dense_model)
+        dense_path, dense_local = ensure_model_ready(dense_model)
+        if dense_local:
+            try:
+                self.bi_encoder = SentenceTransformer(dense_path, local_files_only=True)
+            except TypeError:
+                self.bi_encoder = SentenceTransformer(dense_path, model_kwargs={"local_files_only": True})
+        else:
+            self.bi_encoder = SentenceTransformer(dense_path)
         
         print(f"[*] Loading cross-encoder reranker: {rerank_model}...")
-        self.cross_encoder = CrossEncoder(rerank_model)
+        rerank_path, rerank_local = ensure_model_ready(rerank_model)
+        if rerank_local:
+            try:
+                self.cross_encoder = CrossEncoder(rerank_path, local_files_only=True)
+            except TypeError:
+                self.cross_encoder = CrossEncoder(rerank_path, automodel_args={"local_files_only": True})
+        else:
+            self.cross_encoder = CrossEncoder(rerank_path)
+
         
         # Precompute or load corpus embeddings if cached
         emb_cache = DATA_DIR / "corpus_emb.npy"

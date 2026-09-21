@@ -1,6 +1,6 @@
 {
-  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_model": "C:\\Users\\loter\\Downloads\\localrag\\data\\models\\all-MiniLM-L6-v2",
   "chunk_count": 5376,
   "content_hash": "cba828a4f4dbca7efc53f3e6d8eaefef3e5b4125f398d0d72377e46738d6cfd4",
-  "created_at": 1789826660.3784947
+  "created_at": 1789972094.7035658
 }

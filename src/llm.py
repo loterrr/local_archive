@@ -8,16 +8,21 @@ import time
 import requests
 import re
 from typing import Optional, Generator, Dict, Any, List
+from threading import RLock
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT / "data" / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
+_LLAMA_LOCK = RLock()
 
-SYSTEM_PROMPT = """You are Nexus: The Archive, an expert academic literature synthesis and research grounded assistant.
-Synthesize a clear, rigorous, and direct answer using ONLY the supplied literature context.
-Cite evidence using citation badges like [filename.pdf p.X] or bracket numbers [1], [2] matching the source passages provided.
-Structure your answer with clear bold topics or markdown sections where appropriate.
-If the literature does not contain enough evidence, state clearly: "The indexed manuscripts do not contain enough evidence to answer this question." Do not invent citations or outside facts."""
+SYSTEM_PROMPT = """You are Nexus: The Archive, an articulate, conversational academic research partner grounded strictly in peer-reviewed scientific literature.
+
+CONVERSATIONAL & STYLE GUIDELINES:
+1. Speak naturally, fluidly, and engagingly like an expert research colleague. Give well-synthesized answers using clear paragraphs and markdown structure.
+2. NEVER format responses as robotic repeated templates (e.g. NEVER write "- [1] filename p.X discusses... \n - Summary: ..."). Avoid mechanical formulaic phrases.
+3. Integrate source evidence seamlessly in conversational prose, placing bracket citations at the end of sentences (e.g., "...using sliding window attention [1]." or "...as demonstrated by Wampler et al. [1, p. 1]").
+4. When asked to summarize or explain documents, directly explain the actual subject matter, thesis, methodology, and key contributions of the paper itself. NEVER divert to the theory of "summarization" or "memory compression" algorithms unless specifically asked about those algorithms.
+5. Base all factual claims strictly on the provided LITERATURE EVIDENCE. If evidence is lacking, state so plainly without fabricating facts. Always finish your final sentence completely."""
 
 GREETING_PATTERNS = {
     "hello", "hi", "hey", "greetings", "good morning", "good afternoon", "good evening",
@@ -63,34 +68,15 @@ def is_conversational_query(text: str) -> bool:
 def get_conversational_response(query: str) -> str:
     clean = re.sub(r"[^\w\s]", "", query.strip().lower())
     if any(w in clean for w in ["thank", "thanks"]):
-        return "You are very welcome! Feel free to ask about any methodologies, mathematical formulations, or empirical findings from the indexed research manuscripts."
+        return "You're very welcome! Let me know if you need anything else from the indexed literature."
     if any(w in clean for w in ["bye", "goodbye"]):
-        return "Goodbye! Nexus: The Archive remains offline and ready whenever you wish to explore the literature."
+        return "Goodbye! The Archive remains offline and ready whenever you need it."
     
-    return """Hello! I am **Nexus: The Archive**, your offline academic research assistant grounded in **peer-reviewed AI and NLP manuscripts**.
+    return """Hello! Welcome to **Archive**, your offline academic research assistant.
 
-### What I Can Help You Explore:
-1. **Retrieval-Augmented Generation (RAG):**
-   - *Self-RAG* reflection tokens (`[Retrieve]`, `[IsRel]`, `[IsSup]`, `[IsUse]`)
-   - *Dense Passage Retrieval (DPR)* dual-encoder bi-directional contrastive learning
-   - *ColBERT* late-interaction MaxSim multi-vector representations
-2. **Efficient Transformer Architectures:**
-   - *FlashAttention* IO-aware GPU SRAM tiling and softmax scaling
-   - *Mistral 7B* Sliding Window Attention (SWA) and rolling buffer cache
-   - *Llama 2* pre-training and grouped-query attention
-3. **Hallucination Detection & Benchmark Metrics:**
-   - *RAGAS* Faithfulness, Answer Relevance, and Context Precision
-   - *Chain-of-Verification (CoVe)* multi-step verification planning
-   - *TruthfulQA* and *HaluEval* empirical error analysis
-4. **Biomedical NLP Models:**
-   - *BioBERT*, *PubMedBERT*, and *BioGPT* domain specialization
+I am grounded in your active research manuscripts. What would you like to explore or verify today?"""
 
-💡 **Try asking a specific query:**
-- *"What are the reflection tokens in Self-RAG and how do they function?"*
-- *"How does FlashAttention reduce memory overhead without approximation?"*
-- *"What are the primary metrics used in RAGAS to evaluate RAG pipelines?"*"""
-
-def format_rag_context(contexts) -> str:
+def format_rag_context(contexts, doc_map: Optional[Dict[str, int]] = None) -> str:
     blocks = []
     for i, item in enumerate(contexts, 1):
         if isinstance(item, tuple) or isinstance(item, list):
@@ -209,19 +195,24 @@ class LlamaCppEngine:
         temperature: float = 0.1,
         top_p: float = 0.9,
         max_tokens: int = 700,
-        repetition_penalty: float = 1.15
+        repetition_penalty: float = 1.15,
+        history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         llm = self.get_llm_instance()
-        response = llm.create_chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens,
-            repeat_penalty=repetition_penalty
-        )
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for turn in history[-4:]:
+                if turn.get("role") in {"user", "assistant"} and turn.get("content"):
+                    messages.append({"role": turn["role"], "content": turn["content"]})
+        messages.append({"role": "user", "content": prompt})
+        with _LLAMA_LOCK:
+            response = llm.create_chat_completion(
+                messages=messages,
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=max_tokens,
+                repeat_penalty=repetition_penalty
+            )
         return response["choices"][0]["message"]["content"].strip()
 
     def stream_generate(
@@ -273,21 +264,27 @@ class OllamaEngine:
         system_prompt: str = SYSTEM_PROMPT,
         temperature: float = 0.1,
         top_p: float = 0.9,
-        max_tokens: int = 700,
-        repetition_penalty: float = 1.15
+        max_tokens: int = 300,
+        repetition_penalty: float = 1.15,
+        history: Optional[List[Dict[str, str]]] = None
     ) -> str:
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for turn in history[-4:]:
+                if turn.get("role") in {"user", "assistant"} and turn.get("content"):
+                    messages.append({"role": turn["role"], "content": turn["content"]})
+        messages.append({"role": "user", "content": prompt})
+
         payload = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
+            "messages": messages,
             "stream": False,
             "options": {
                 "temperature": temperature,
                 "top_p": top_p,
                 "num_predict": max_tokens,
-                "repeat_penalty": repetition_penalty
+                "repeat_penalty": repetition_penalty,
+                "num_thread": 4
             }
         }
         
@@ -304,10 +301,7 @@ class OllamaEngine:
         # Fallback to OpenAI-compatible endpoint
         payload_v1 = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
+            "messages": messages,
             "temperature": temperature,
             "top_p": top_p,
             "max_tokens": max_tokens,
@@ -323,7 +317,7 @@ class OllamaEngine:
         system_prompt: str = SYSTEM_PROMPT,
         temperature: float = 0.1,
         top_p: float = 0.9,
-        max_tokens: int = 700,
+        max_tokens: int = 300,
         repetition_penalty: float = 1.15
     ) -> Generator[str, None, None]:
         payload = {
@@ -337,7 +331,8 @@ class OllamaEngine:
                 "temperature": temperature,
                 "top_p": top_p,
                 "num_predict": max_tokens,
-                "repeat_penalty": repetition_penalty
+                "repeat_penalty": repetition_penalty,
+                "num_thread": 4
             }
         }
         r = requests.post(f"{self.base_url}/api/chat", json=payload, stream=True, timeout=self.timeout)
@@ -403,22 +398,48 @@ class LocalLLM:
         contexts: Any,
         temperature: float = 0.1,
         top_p: float = 0.9,
-        max_tokens: int = 700,
-        repetition_penalty: float = 1.15
+        max_tokens: int = 650,
+        repetition_penalty: float = 1.15,
+        history: Optional[List[Dict[str, str]]] = None,
+        doc_map: Optional[Dict[str, int]] = None,
+        is_all_docs: bool = False,
+        **kwargs
     ) -> str:
         if not contexts:
             return "The uploaded documents do not contain enough information to answer this question."
 
-        context_str = format_rag_context(contexts)
-        prompt = f"LITERATURE EVIDENCE:\n{context_str}\n\nRESEARCH QUERY: {question}\n\nProvide a synthesized, verifiable answer citing the source manuscripts [filename.pdf p.X] or [1], [2]:"
+        context_str = format_rag_context(contexts, doc_map=doc_map)
+        budget = kwargs.get("max_new_tokens", max_tokens)
+        if is_all_docs:
+            prompt = (
+                f"INDEXED RESEARCH MANUSCRIPTS IN THE ARCHIVE ({len(contexts)} Files):\n{context_str}\n\n"
+                f"RESEARCH QUERY: {question}\n\n"
+                f"Act as a professional, articulate academic research partner. Provide an engaging, beautifully structured executive summary covering EACH of the {len(contexts)} manuscripts indexed above.\n\n"
+                f"Instructions:\n"
+                f"1. Start with a warm, natural introductory sentence acknowledging the active collection.\n"
+                f"2. Dedicate a clean section to EACH manuscript using its actual title or core topic as a bold header (e.g. '**1. [Paper Title]**').\n"
+                f"3. For each document, write a cohesive 2-3 sentence paragraph summarizing its core thesis, research problem, and key methodologies/findings, citing the manuscript as [1], [2], etc.\n"
+                f"4. Do NOT output repetitive mechanical templates like '- [1] filename discusses... \\n - Summary: ...'. Speak naturally like a real chatbot.\n"
+                f"5. Finish with a brief concluding cross-paper takeaway highlighting the common themes across the collection."
+            )
+            tokens_to_use = max(budget, 950)
+        else:
+            prompt = (
+                f"LITERATURE EVIDENCE:\n{context_str}\n\n"
+                f"RESEARCH QUERY: {question}\n\n"
+                f"Synthesize a clear, cohesive, conversational academic response directly answering the research query using the literature evidence above. "
+                f"Cite supporting evidence using bracket numbers like [1] or [2] at the end of sentences:"
+            )
+            tokens_to_use = budget
         
         return self.generate_raw(
             prompt=prompt,
             system_prompt=SYSTEM_PROMPT,
             temperature=temperature,
             top_p=top_p,
-            max_tokens=max_tokens,
-            repetition_penalty=repetition_penalty
+            max_tokens=tokens_to_use,
+            repetition_penalty=repetition_penalty,
+            history=history
         )
 
     def generate_raw(
@@ -427,8 +448,9 @@ class LocalLLM:
         system_prompt: Optional[str] = None,
         temperature: float = 0.0,
         top_p: float = 0.9,
-        max_tokens: int = 700,
-        repetition_penalty: float = 1.15
+        max_tokens: int = 400,
+        repetition_penalty: float = 1.15,
+        history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         sys_p = system_prompt or SYSTEM_PROMPT
         backend = self.get_active_backend()
@@ -442,7 +464,8 @@ class LocalLLM:
                     temperature=temperature,
                     top_p=top_p,
                     max_tokens=max_tokens,
-                    repetition_penalty=repetition_penalty
+                    repetition_penalty=repetition_penalty,
+                    history=history
                 )
             except Exception as e:
                 # Fallback to Ollama if llama-cpp encounter runtime issue
@@ -453,7 +476,8 @@ class LocalLLM:
                         temperature=temperature,
                         top_p=top_p,
                         max_tokens=max_tokens,
-                        repetition_penalty=repetition_penalty
+                        repetition_penalty=repetition_penalty,
+                        history=history
                     )
                 raise RuntimeError(f"llama-cpp-python generation failed: {e}")
 
@@ -465,7 +489,8 @@ class LocalLLM:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
-                repetition_penalty=repetition_penalty
+                repetition_penalty=repetition_penalty,
+                history=history
             )
 
         raise RuntimeError("No local LLM backend is currently available. Please place a GGUF model in 'data/models/' or start Ollama.")
@@ -476,7 +501,7 @@ class LocalLLM:
         contexts: Any,
         temperature: float = 0.1,
         top_p: float = 0.9,
-        max_tokens: int = 700,
+        max_tokens: int = 300,
         repetition_penalty: float = 1.15
     ) -> Generator[str, None, None]:
         if not contexts:

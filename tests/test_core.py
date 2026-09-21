@@ -59,4 +59,19 @@ def test_generate_synthetic_corpus_queries():
     assert any(q["filename"] == "docA.pdf" for q in queries)
     assert any(q["filename"] == "docB.pdf" for q in queries)
     assert all("query" in q and len(q["query"]) > 10 for q in queries)
+    
+    # Rigor Guarantee 1: Zero Filename Leakage
+    for q in queries:
+        q_text = q["query"]
+        assert "docA" not in q_text, f"Target filename stem 'docA' leaked into query: {q_text}"
+        assert "docB" not in q_text, f"Target filename stem 'docB' leaked into query: {q_text}"
+        assert ".pdf" not in q_text.lower(), f"File extension leaked into query: {q_text}"
+        assert q_text.endswith("?"), f"Query must end with a question mark: {q_text}"
+
+    # Rigor Guarantee 2: Challenge Tier Categorization
+    valid_tiers = {"Empirical Fact", "Methodological Synthesis", "Cross-Document Disambiguation"}
+    for q in queries:
+        assert "category" in q, "Query must specify a challenge tier"
+        assert q["category"] in valid_tiers, f"Invalid category tier: {q['category']}"
+
 

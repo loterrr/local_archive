@@ -13,6 +13,7 @@ import faiss
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
 from .ingest import Chunk
+from .download_models import ensure_model_ready
 
 
 class QueryCache:
@@ -71,7 +72,23 @@ class QueryCache:
 class HybridIndex:
     def __init__(self, model_name: str, cache_size: int = 128, cache_ttl: int = 300):
         self.model_name = model_name
-        self.embedder = SentenceTransformer(model_name)
+        resolved_path, is_local = ensure_model_ready(model_name)
+        self.model_path = resolved_path
+        if is_local:
+            try:
+                self.embedder = SentenceTransformer(resolved_path, local_files_only=True)
+            except TypeError:
+                self.embedder = SentenceTransformer(resolved_path, model_kwargs={"local_files_only": True})
+        else:
+            self.embedder = SentenceTransformer(resolved_path)
+
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                torch.set_num_threads(4)
+        except Exception:
+            pass
+
         self.chunks: list[Chunk] = []
         self.embeddings: np.ndarray | None = None
         self.index = None
@@ -79,7 +96,38 @@ class HybridIndex:
         self.cache = QueryCache(cache_size, cache_ttl)
         self.stats = {"searches": 0, "cache_hits": 0, "total_latency_ms": 0.0}
 
-    def build(self, chunks: list[Chunk], batch_size: int = 64, progress_callback=None):
+    def get_doc_ordinal_map(self) -> dict[str, int]:
+        """Compute stable 1-indexed document sequence by sorted filename."""
+        filenames = sorted(set(c.filename for c in self.chunks))
+        return {fn: i + 1 for i, fn in enumerate(filenames)}
+
+    def get_chunk_searchable_text(self, chunk: Chunk, doc_map: dict[str, int] | None = None) -> str:
+        """Enriches chunk text with ordinal, document number, filename, and page tokens."""
+        if doc_map is None:
+            doc_map = self.get_doc_ordinal_map()
+        d_num = doc_map.get(chunk.filename, 1)
+        ords = {
+            1: "first 1st", 2: "second 2nd", 3: "third 3rd",
+            4: "fourth 4th", 5: "fifth 5th", 6: "sixth 6th",
+            7: "seventh 7th", 8: "eighth 8th", 9: "ninth 9th", 10: "tenth 10th"
+        }
+        ord_str = ords.get(d_num, f"{d_num}th")
+        header = f"document {d_num} doc {d_num} paper {d_num} {ord_str} pdf {chunk.filename} page {chunk.page_number} "
+        return header + chunk.text
+
+    def refresh_bm25(self):
+        """Rapidly builds or rebuilds BM25 index with full document metadata (<150ms)."""
+        if not self.chunks:
+            self.bm25 = None
+            return
+        doc_map = self.get_doc_ordinal_map()
+        tokenized = [
+            re.findall(r"\w+", self.get_chunk_searchable_text(c, doc_map).lower())
+            for c in self.chunks
+        ]
+        self.bm25 = BM25Okapi(tokenized)
+
+    def build(self, chunks: list[Chunk], batch_size: int = 32, progress_callback=None):
         # Content-based deduplication makes repeated uploads / duplicate pages harmless.
         unique = {}
         for c in chunks:
@@ -108,12 +156,11 @@ class HybridIndex:
         self.embeddings = embeddings
         self.index = faiss.IndexFlatIP(embeddings.shape[1])
         self.index.add(np.asarray(embeddings, dtype=np.float32))
-        tokenized = [re.findall(r"\w+", t.lower()) for t in texts]
-        self.bm25 = BM25Okapi(tokenized)
+        self.refresh_bm25()
         self.cache.clear()
         return embeddings
 
-    def add_chunks(self, new_chunks: list[Chunk], batch_size: int = 64, progress_callback=None):
+    def add_chunks(self, new_chunks: list[Chunk], batch_size: int = 32, progress_callback=None):
         """Incrementally index new chunks without re-embedding existing chunks."""
         if self.index is None or not self.chunks:
             return self.build(new_chunks, batch_size=batch_size, progress_callback=progress_callback)
@@ -155,9 +202,8 @@ class HybridIndex:
         else:
             self.embeddings = new_embeddings
 
-        # Rapidly rebuild BM25 inverted lexical index (<30ms)
-        tokenized = [re.findall(r"\w+", c.text.lower()) for c in self.chunks]
-        self.bm25 = BM25Okapi(tokenized)
+        # Rapidly rebuild BM25 inverted lexical index with metadata (<150ms)
+        self.refresh_bm25()
         self.cache.clear()
         return self.embeddings
 
@@ -187,8 +233,7 @@ class HybridIndex:
             self.index = faiss.IndexFlatIP(self.embeddings.shape[1])
             self.index.add(np.asarray(self.embeddings, dtype=np.float32))
 
-        tokenized = [re.findall(r"\w+", c.text.lower()) for c in self.chunks]
-        self.bm25 = BM25Okapi(tokenized)
+        self.refresh_bm25()
         self.cache.clear()
 
     def search(self, query: str, dense_k=32, final_k=8, rrf_k=60, candidate_k: int | None = None):
@@ -269,4 +314,6 @@ class HybridIndex:
                 obj.embeddings = np.load(directory / "embeddings.npy")
             except Exception:
                 pass
+        if obj.chunks:
+            obj.refresh_bm25()
         return obj

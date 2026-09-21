@@ -40,7 +40,9 @@ def save_eval_template(path: Path):
 
 def recall_at_k(ranked_ids: Sequence[str], relevant_ids: Iterable[str], k: int = 5) -> float:
     relevant = set(relevant_ids)
-    return float(bool(set(ranked_ids[:k]) & relevant)) if relevant else 0.0
+    if not relevant:
+        return 0.0
+    return len(set(ranked_ids[:k]) & relevant) / len(relevant)
 
 def precision_at_k(ranked_ids: Sequence[str], relevant_ids: Iterable[str], k: int = 5) -> float:
     relevant = set(relevant_ids)

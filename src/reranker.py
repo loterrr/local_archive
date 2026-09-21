@@ -4,6 +4,7 @@ from threading import RLock
 import time
 import numpy as np
 from sentence_transformers import CrossEncoder
+from .download_models import ensure_model_ready
 
 DEFAULT_RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-2-v2"
 SHALLOW_RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-2-v2"
@@ -38,15 +39,34 @@ class CrossEncoderReranker:
         if self.model_name not in self._model_cache:
             with self._lock:
                 if self.model_name not in self._model_cache:
-                    self._model_cache[self.model_name] = CrossEncoder(self.model_name, device=self.device)
+                    resolved_path, is_local = ensure_model_ready(self.model_name)
+                    if is_local:
+                        try:
+                            self._model_cache[self.model_name] = CrossEncoder(
+                                resolved_path,
+                                device=self.device,
+                                local_files_only=True,
+                            )
+                        except TypeError:
+                            self._model_cache[self.model_name] = CrossEncoder(
+                                resolved_path,
+                                device=self.device,
+                                automodel_args={"local_files_only": True},
+                            )
+                    else:
+                        self._model_cache[self.model_name] = CrossEncoder(resolved_path, device=self.device)
         return self._model_cache[self.model_name]
+
 
     def rerank(self, query: str, candidates, top_k: int = 10, batch_size: int = 32):
         if not candidates:
             return []
         model = self._get_model()
         started = time.perf_counter()
-        pairs = [(query, item[0].text) for item in candidates]
+        pairs = [
+            (query, f"[{item[0].filename} Page {item[0].page_number}]: {item[0].text}")
+            for item in candidates
+        ]
         scores = model.predict(pairs, batch_size=batch_size, show_progress_bar=False)
         scores = np.asarray(scores, dtype=np.float32).reshape(-1)
         ranked = sorted(zip(candidates, scores.tolist()), key=lambda x: x[1], reverse=True)[:top_k]

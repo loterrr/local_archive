@@ -15,12 +15,13 @@ __pycache__/
 
 # Large model weights (>100MB violates GitHub file size limits)
 *.gguf
-data/models/*.gguf
-data/models/.cache/
+data/models/*
+!data/models/.gitkeep
 models/*
 !models/.gitkeep
 
-# Operating System Files
+# Operating System and Office Lock Files
 .DS_Store
 Thumbs.db
 *.tmp
+~$*
