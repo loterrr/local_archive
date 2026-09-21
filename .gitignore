@@ -25,3 +25,7 @@ models/*
 Thumbs.db
 *.tmp
 ~$*
+
+# Presentation and Scratch
+*.pptx
+scratch/
